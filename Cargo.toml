@@ -1,0 +1,66 @@
+[package]
+name = "chain-siren"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+publish = false
+license = "MIT"
+
+[workspace]
+members = [".", "lib", "service"]
+resolver = "2"
+
+[workspace.dependencies]
+siren-lib = { path = "lib" }
+siren-service = { path = "service" }
+alloy-primitives = { version = "=0.8.25", features = ["serde"] }
+async-trait = "=0.1.89"
+base64 = "=0.22.1"
+axum = { version = "=0.8.4", features = ["ws"] }
+chrono = { version = "=0.4.41", features = ["serde"] }
+clap = { version = "=4.5.45", features = ["derive"] }
+futures-util = "=0.3.31"
+fs2 = "=0.4.3"
+hex = "=0.4.3"
+reqwest = { version = "=0.12.23", default-features = false, features = ["json", "rustls-tls", "stream"] }
+revm = { version = "=19.5.0", default-features = false, features = ["std", "secp256k1", "portable"] }
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = "=1.0.145"
+sha2 = "=0.10.9"
+sqlx = { version = "=0.8.6", default-features = false, features = ["runtime-tokio-rustls", "postgres", "json", "uuid", "chrono", "migrate", "macros"] }
+thiserror = "=2.0.16"
+tokio = { version = "=1.47.1", features = ["rt-multi-thread", "macros", "signal", "sync", "time", "fs", "io-util", "net", "process", "io-std"] }
+tokio-util = { version = "=0.7.16", features = ["rt"] }
+tokio-tungstenite = { version = "=0.27.0", features = ["rustls-tls-webpki-roots"] }
+toml = "=0.9.5"
+tracing = "=0.1.41"
+tracing-subscriber = { version = "=0.3.19", features = ["env-filter", "json"] }
+uuid = { version = "=1.18.0", features = ["v4", "v5", "serde"] }
+zstd = "=0.13.3"
+
+[dependencies]
+siren-lib.workspace = true
+siren-service.workspace = true
+clap.workspace = true
+tokio.workspace = true
+serde_json.workspace = true
+alloy-primitives.workspace = true
+
+serde.workspace = true
+sqlx.workspace = true
+uuid.workspace = true
+axum.workspace = true
+tokio-tungstenite.workspace = true
+futures-util.workspace = true
+hex.workspace = true
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+
+[[bench]]
+name = "screen"
+harness = false
+
+[dev-dependencies]
+chrono.workspace = true
