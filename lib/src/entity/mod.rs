@@ -70,3 +70,54 @@ pub struct BlockBatch {
     pub timestamp: u64,
     pub observations: Vec<Observation>,
 }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Evidence {
+    pub id: String,
+    pub kind: String,
+    pub description: String,
+    pub transaction: Option<B256>,
+    pub data: Value,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ScoreComponent { pub rule: String, pub version: String, pub points: u16, pub evidence_ids: Vec<String> }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssetDelta {
+    pub address: Address,
+    pub asset: Option<Address>,
+    /// Signed decimal integer base units, null when unavailable.
+    pub net: Option<String>,
+    pub basis: String,
+    pub confidence: u16,
+    pub price: Option<Price>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Price { pub usd_decimal: String, pub source: String, pub observed_at: DateTime<Utc>, pub decimals: u8 }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SimulationStatus { Success, Revert, Timeout, Inconclusive, Unsupported, NeedsDependency }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StateReference {
+    pub chain_id: u64,
+    pub block_hash: B256,
+    pub transaction_index: Option<u64>,
+    pub overlay_id: String,
+    pub execution_config: String,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SimulationResult {
+    pub status: SimulationStatus,
+    pub fidelity: String,
+    pub state: Option<StateReference>,
+    pub assumptions: Vec<String>,
+    pub unresolved: Vec<String>,
+    pub gas_used: Option<u64>,
+    pub elapsed_ms: u64,
+    pub evidence: Vec<Evidence>,
+    pub deltas: Vec<AssetDelta>,
+}
+impl SimulationResult {
+    pub fn unavailable(reason: impl Into<String>) -> Self {
+        Self { status: SimulationStatus::Unsupported, fidelity: "none".into(), state: None,
+            assumptions: vec![], unresolved: vec![reason.into()], gas_used: None, elapsed_ms: 0, evidence: vec![], deltas: vec![] }
+    }
+}
