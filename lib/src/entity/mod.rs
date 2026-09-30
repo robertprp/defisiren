@@ -121,3 +121,69 @@ impl SimulationResult {
             assumptions: vec![], unresolved: vec![reason.into()], gas_used: None, elapsed_ms: 0, evidence: vec![], deltas: vec![] }
     }
 }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Finding {
+    pub schema_version: String,
+    pub event_id: Uuid,
+    pub incident_id: Uuid,
+    pub revision: i64,
+    pub cursor: i64,
+    pub chain_id: u64,
+    pub source: String,
+    pub observed_at: DateTime<Utc>,
+    pub position: Position,
+    pub ordering: Ordering,
+    pub finality: Stage,
+    pub finding_type: String,
+    pub severity: String,
+    /// Basis points [0, 10000], evidence confidence, not probability of theft.
+    pub confidence: u16,
+    pub addresses: Vec<Address>,
+    pub suspected_victims: Vec<Address>,
+    pub observed_victims: Vec<Address>,
+    pub evidence: Vec<Evidence>,
+    pub components: Vec<ScoreComponent>,
+    pub detector_version: String,
+    pub simulation: SimulationResult,
+    pub asset_deltas: Vec<AssetDelta>,
+    pub enrichment_complete: bool,
+    pub reviewed: bool,
+    pub retracted: bool,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Profile {
+    pub chain_id: u64,
+    pub address: Address,
+    pub first_observed: DateTime<Utc>,
+    pub last_activity: DateTime<Utc>,
+    pub history_start: Option<u64>,
+    pub history_complete: bool,
+    pub nonce: Option<u64>,
+    pub nonce_state: Option<B256>,
+    pub code_status: String,
+    pub freshness_confidence: u16,
+    pub watch_until: DateTime<Utc>,
+    pub funding: Vec<FundingEdge>,
+    pub deployments: Vec<Address>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FundingEdge {
+    pub id: String,
+    pub chain_id: u64,
+    pub from: Address,
+    pub to: Address,
+    pub asset: Option<Address>,
+    pub amount: String,
+    pub fee: Option<String>,
+    pub relayer: Option<Address>,
+    pub transaction: B256,
+    pub log_index: Option<u64>,
+    pub block_hash: Option<B256>,
+    pub observed_at: DateTime<Utc>,
+    pub provisional: bool,
+    /// Canonical bridge root, inherited by subsequent transfer evidence.
+    #[serde(default)]
+    pub bridge_origin: Option<String>,
+    pub hop: u8,
+    pub confidence: u16,
+}
