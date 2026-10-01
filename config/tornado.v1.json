@@ -1,0 +1,29 @@
+[
+  {
+    "chain_id": 1,
+    "address": "0x12d66f87a04a9e220743712ce6d9bb1b5616b8fc",
+    "deployment_block": 9116966,
+    "abi_version": "tornado-classic/1",
+    "asset": null,
+    "denomination": "0x16345785d8a0000",
+    "provenance_url": "https://github.com/tornadocash/tornado-cli/blob/master/config.js"
+  },
+  {
+    "chain_id": 1,
+    "address": "0xd4b88df4d29f5cedd6857912842cff3b20c8cfa3",
+    "deployment_block": 9117612,
+    "abi_version": "tornado-classic/1",
+    "asset": "0x6b175474e89094c44da98b954eedeac495271d0f",
+    "denomination": "0x56bc75e2d63100000",
+    "provenance_url": "https://github.com/tornadocash/tornado-cli/blob/master/config.js"
+  },
+  {
+    "chain_id": 56,
+    "address": "0x84443cfd09a48af6ef360c6976c5392ac5023a1f",
+    "deployment_block": 8159279,
+    "abi_version": "tornado-classic/1",
+    "asset": null,
+    "denomination": "0x16345785d8a0000",
+    "provenance_url": "https://github.com/tornadocash/tornado-cli/blob/master/config.js"
+  }
+]
