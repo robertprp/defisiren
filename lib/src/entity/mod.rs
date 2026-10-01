@@ -187,3 +187,60 @@ pub struct FundingEdge {
     pub hop: u8,
     pub confidence: u16,
 }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Capability {
+    pub chain_id: u64,
+    pub family: String,
+    pub transaction_types: Vec<u8>,
+    pub pending_visibility: String,
+    pub preconfirmation_semantics: String,
+    pub traces: Vec<String>,
+    pub historical_state: String,
+    pub finality: String,
+    pub system_contracts: Vec<Address>,
+    pub response_submission: Vec<String>,
+    pub verified_at: Option<DateTime<Utc>>,
+    pub degraded: Vec<String>,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum Mode { #[default] Observe, Simulate, ExecuteAuthorized }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResponsePolicy {
+    pub id: Uuid,
+    pub version: u32,
+    pub chain_id: u64,
+    pub protocol: String,
+    pub target: Address,
+    pub selector: [u8; 4],
+    pub signer: Address,
+    /// Reviewed exact calldata binds recovery destination and amount, not just a selector.
+    pub calldata_hash: B256,
+    pub recovery_destination: Option<Address>,
+    pub max_value: U256,
+    pub max_gas: u64,
+    pub max_fee_per_gas: U256,
+    pub expires_at: DateTime<Utc>,
+    pub authority_call: Bytes,
+    pub authority_result: Bytes,
+    pub max_state_age_seconds: u64,
+    pub enabled: bool,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Action {
+    pub policy_id: Uuid,
+    pub policy_version: u32,
+    pub chain_id: u64,
+    pub target: Address,
+    pub signer: Address,
+    pub calldata: Bytes,
+    pub value: U256,
+    pub gas: u64,
+    pub max_fee_per_gas: U256,
+    pub nonce: u64,
+    pub destination: Option<Address>,
+    pub state_hash: B256,
+    pub state_time: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+    pub incident_id: Uuid,
+}
