@@ -1,0 +1,21 @@
+name = "chain-siren-offline"
+listen = "127.0.0.1:8080"
+database_env = "DATABASE_URL"
+data_dir = "data/offline"
+mode = "observe"
+journal_max_bytes = 16777216
+max_input_bytes = 1048576
+rpc_concurrency = 4
+trace_candidates_per_block = 8
+poll_ms = 1000
+shutdown_seconds = 10
+max_reorg_depth = 128
+api_requests_per_minute = 120
+chains = []
+[[protected]]
+chain_id = 1
+address = "0x0000000000000000000000000000000000001000"
+name = "Synthetic vulnerable protocol"
+native_outflow_limit = "0xb1a2bc2ec50000"
+authorized_admins = ["0x0000000000000000000000000000000000000b0b"]
+governance = false
