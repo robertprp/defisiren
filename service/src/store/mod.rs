@@ -181,3 +181,34 @@ impl Store {
             .bind(chain as i64).bind(address.as_slice()).bind(hours as i32).bind(reason).execute(&self.pool).await.map_err(db)?; Ok(())
     }
 }
+async fn insert_observation(tx: &mut Transaction<'_,Postgres>, o: &Observation) -> AppResult<bool> {
+    let stage = serde_json::to_value(o.stage)?.as_str().ok_or_else(|| Error::Invalid("stage".into()))?.to_owned();
+    let result = sqlx::query("INSERT INTO observations(chain_id,hash,source,stage,block_hash,sender,nonce,data,canonical) VALUES($1,$2,$3,$4,$5,$6,$7::numeric,$8,$9) ON CONFLICT(chain_id,hash,source,stage,block_hash) DO UPDATE SET canonical=EXCLUDED.canonical WHERE NOT observations.canonical AND EXCLUDED.canonical")
+        .bind(o.chain_id as i64).bind(o.hash.as_slice()).bind(&o.source).bind(stage).bind(o.position.block_hash.unwrap_or(B256::ZERO).as_slice())
+        .bind(o.from.as_slice()).bind(o.nonce.to_string()).bind(serde_json::to_value(o)?).bind(o.stage.canonical()).execute(&mut **tx).await.map_err(db)?;
+    Ok(result.rows_affected()>0)
+}
+pub async fn publish(tx: &mut Transaction<'_,Postgres>, mut f: Finding) -> AppResult<Finding> {
+    sqlx::query("SET LOCAL synchronous_commit=on").execute(&mut **tx).await.map_err(db)?;
+    // The stream-head row lock serializes allocation and commit; sequence gaps cannot hide later commits.
+    let cursor: i64 = sqlx::query_scalar("UPDATE stream_heads SET cursor=cursor+1 WHERE stream='findings' RETURNING cursor")
+        .fetch_one(&mut **tx).await.map_err(db)?;
+    let old: Option<i64> = sqlx::query_scalar("SELECT revision FROM incidents WHERE id=$1 FOR UPDATE")
+        .bind(f.incident_id).fetch_optional(&mut **tx).await.map_err(db)?;
+    f.revision = old.unwrap_or(0)+1; f.cursor=cursor;
+    f.event_id = Uuid::new_v5(&f.incident_id, &f.revision.to_be_bytes());
+    let data = serde_json::to_value(&f)?;
+    sqlx::query("INSERT INTO incidents(id,chain_id,revision,data) VALUES($1,$2,$3,$4) ON CONFLICT(id) DO UPDATE SET revision=EXCLUDED.revision,data=EXCLUDED.data,updated_at=now()")
+        .bind(f.incident_id).bind(f.chain_id as i64).bind(f.revision).bind(&data).execute(&mut **tx).await.map_err(db)?;
+    sqlx::query("INSERT INTO finding_revisions(event_id,incident_id,revision,chain_id,block_hash,data) VALUES($1,$2,$3,$4,$5,$6)")
+        .bind(f.event_id).bind(f.incident_id).bind(f.revision).bind(f.chain_id as i64).bind(f.position.block_hash.map(|h| h.to_vec())).bind(&data).execute(&mut **tx).await.map_err(db)?;
+    sqlx::query("INSERT INTO delivery_outbox(stream,cursor,event_id,data,telegram_sent) VALUES('findings',$1,$2,$3,$4)")
+        .bind(cursor).bind(f.event_id).bind(data).bind(f.source == "offline_replay").execute(&mut **tx).await.map_err(db)?;
+    if f.reviewed {
+        let reviewed_cursor: i64 = sqlx::query_scalar("UPDATE stream_heads SET cursor=cursor+1 WHERE stream='reviewed' RETURNING cursor").fetch_one(&mut **tx).await.map_err(db)?;
+        let mut reviewed=f.clone(); reviewed.cursor=reviewed_cursor;
+        sqlx::query("INSERT INTO delivery_outbox(stream,cursor,event_id,data) VALUES('reviewed',$1,$2,$3)")
+            .bind(reviewed_cursor).bind(f.event_id).bind(serde_json::to_value(reviewed)?).execute(&mut **tx).await.map_err(db)?;
+    }
+    Ok(f)
+}
