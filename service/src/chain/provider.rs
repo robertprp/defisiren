@@ -134,3 +134,61 @@ impl ProviderPool {
         Err(last)
     }
 }
+pub fn quantity(v: &Value) -> AppResult<u64> {
+    let s = v.as_str().ok_or_else(|| Error::Invalid("RPC quantity is not a string".into()))?;
+    u64::from_str_radix(s.strip_prefix("0x").ok_or_else(|| Error::Invalid("quantity prefix".into()))?, 16)
+        .map_err(|_| Error::Invalid("quantity overflow".into()))
+}
+pub fn field<T: serde::de::DeserializeOwned>(v: &Value, name: &str) -> AppResult<T> {
+    Ok(serde_json::from_value(v.get(name).cloned().ok_or_else(|| Error::Invalid(format!("missing {name}")))?)?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{extract::State, response::{IntoResponse,Response}, routing::post, Json, Router};
+    use std::sync::atomic::AtomicU8;
+
+    #[derive(Default)]
+    struct Mock { mode:AtomicU8, chain_calls:AtomicU64, method_calls:AtomicU64, requests:AtomicU64 }
+    async fn rpc(State(state):State<Arc<Mock>>,Json(request):Json<Value>)->Response {
+        state.requests.fetch_add(1,Ordering::SeqCst);
+        if state.mode.load(Ordering::SeqCst)==1 {
+            return (axum::http::StatusCode::TOO_MANY_REQUESTS,[("retry-after","3")],"limited").into_response();
+        }
+        let result=if request["method"]=="eth_chainId" {
+            state.chain_calls.fetch_add(1,Ordering::SeqCst);
+            if state.mode.load(Ordering::SeqCst)==2{"0x38"}else{"0x1"}
+        }else{
+            state.method_calls.fetch_add(1,Ordering::SeqCst);"0x10"
+        };
+        Json(json!({"jsonrpc":"2.0","id":request["id"],"result":result})).into_response()
+    }
+    #[tokio::test]
+    async fn verification_is_cached_and_rate_limits_keep_their_cause() {
+        let listener=tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address=listener.local_addr().unwrap();
+        let state=Arc::new(Mock::default());
+        let app=Router::new().route("/",post(rpc)).with_state(state.clone());
+        let server=tokio::spawn(async move{axum::serve(listener,app).await.unwrap();});
+        let pool=ProviderPool {
+            chain_id:1,client:reqwest::Client::new(),endpoints:vec![format!("http://{address}/")],
+            verified:vec![Mutex::new(None)],gate:Arc::new(Semaphore::new(2)),next:AtomicU64::new(1),
+            max_bytes:4096,interval:Duration::from_millis(1),
+        };
+        for _ in 0..2{assert_eq!(pool.request("eth_blockNumber",json!([])).await.unwrap(),json!("0x10"));}
+        assert_eq!(state.chain_calls.load(Ordering::SeqCst),1);
+        assert_eq!(state.method_calls.load(Ordering::SeqCst),2);
+        // A newly verified/failover endpoint cannot bypass chain-domain checks.
+        *pool.verified[0].lock().await=None;state.mode.store(2,Ordering::SeqCst);
+        let error=pool.request("eth_blockNumber",json!([])).await.unwrap_err();
+        assert!(matches!(error,Error::Provider(ref message) if message.contains("wrong chain")));
+        assert_eq!(state.method_calls.load(Ordering::SeqCst),2);
+        state.mode.store(1,Ordering::SeqCst);
+        assert!(matches!(pool.request("eth_blockNumber",json!([])).await,Err(Error::RateLimited{retry_after_secs:3})));
+        let requests=state.requests.load(Ordering::SeqCst);
+        assert!(matches!(pool.request("eth_blockNumber",json!([])).await,Err(Error::RateLimited{..})));
+        assert_eq!(state.requests.load(Ordering::SeqCst),requests,"cooldown must prevent another wire request");
+        server.abort();
+    }
+}
