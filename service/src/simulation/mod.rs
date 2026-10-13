@@ -104,3 +104,62 @@ impl DatabaseCommit for StrictDb {
         }
     }
 }
+/// Offline, complete snapshots only. Live envelope signature recovery is intentionally not bypassed.
+pub fn execute(job:ReplayJob)->AppResult<SimulationResult> {
+    if !job.synthetic_fixture {return Ok(SimulationResult::unavailable("unsigned snapshot jobs are restricted to synthetic forensic fixtures"));}
+    if job.snapshot.state.execution_config!="ethereum-cancun-fixture/1" || !matches!(job.snapshot.state.chain_id,1|31337) {
+        return Ok(SimulationResult::unavailable("local backend only validated by supplied Cancun fixtures; OP/BSC/Nitro require native rules"));
+    }
+    if job.transactions.is_empty() || job.transactions.len()>32 || job.transactions.iter().any(|t|t.gas>5_000_000) {
+        return Err(Error::Limit("replay sequence or gas".into()));
+    }
+    let start=Instant::now(); let before=job.snapshot.clone();
+    let db=StrictDb { snapshot:job.snapshot.clone(),reads:0,max_reads:100_000 };
+    let mut evm=Evm::builder().with_db(db).with_spec_id(SpecId::CANCUN)
+        .modify_cfg_env(|c|c.chain_id=job.snapshot.state.chain_id)
+        .modify_block_env(|b|{b.number=U256::from(job.snapshot.number);b.timestamp=U256::from(job.snapshot.timestamp);
+            b.basefee=job.snapshot.basefee;b.coinbase=job.snapshot.coinbase;b.gas_limit=U256::from(job.snapshot.gas_limit);b.prevrandao=Some(B256::ZERO);})
+        .build();
+    let mut gas=0;let mut evidence=vec![];let mut status=SimulationStatus::Success;let mut unresolved=vec![];
+    for (index,t) in job.transactions.iter().enumerate() {
+        evm.context.evm.env.tx=Default::default();
+        let tx=&mut evm.context.evm.env.tx;
+        tx.caller=t.caller;tx.transact_to=t.to.map(TxKind::Call).unwrap_or(TxKind::Create);tx.data=t.data.clone();
+        tx.value=t.value;tx.nonce=Some(t.nonce);tx.gas_limit=t.gas;tx.gas_price=t.gas_price;tx.chain_id=Some(job.snapshot.state.chain_id);
+        match evm.transact_commit() {
+            Ok(result)=>{gas+=result.gas_used();if !result.is_success(){status=SimulationStatus::Revert;}
+                evidence.push(Evidence {id:format!("local:{index}"),kind:"local_execution".into(),description:format!("{result:?}"),transaction:None,data:json!({"sequence_index":index,"success":result.is_success(),"gas":result.gas_used()})});},
+            Err(e)=>{status=SimulationStatus::Inconclusive;unresolved.push(format!("{e:?}"));break;}
+        }
+    }
+    let mut deltas=vec![];
+    for (address,old) in &before.accounts {
+        if let (Some(old),Some(Some(new)))=(old,evm.context.evm.db.snapshot.accounts.get(address)) {
+            if old.balance!=new.balance {deltas.push(AssetDelta {address:*address,asset:None,
+                net:Some(if new.balance>=old.balance {(new.balance-old.balance).to_string()}else{format!("-{}",old.balance-new.balance)}),
+                basis:"local_state_diff_including_fees".into(),confidence:10000,price:None});}
+        }
+    }
+    Ok(SimulationResult {status,fidelity:"synthetic complete-state Cancun REVM replay".into(),state:Some(before.state),
+        assumptions:vec!["Synthetic fixture caller is trusted; this is not a signed live transaction.".into(),"Timestamp, ordering, fees, randomness and complete state are explicit fixture assumptions.".into()],
+        unresolved,gas_used:Some(gas),elapsed_ms:start.elapsed().as_millis() as u64,evidence,deltas})
+}
+pub async fn isolated(job:&ReplayJob,timeout:Duration)->AppResult<SimulationResult> {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let bytes=serde_json::to_vec(job)?;
+    if bytes.len()>8*1024*1024 {return Err(Error::Limit("simulation job".into()));}
+    let mut child=tokio::process::Command::new(std::env::current_exe()?).arg("simulation-worker")
+        .stdin(std::process::Stdio::piped()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::null()).kill_on_drop(true).spawn()?;
+    let mut input=child.stdin.take().ok_or_else(||Error::Dependency("worker stdin".into()))?;
+    let output=child.stdout.take().ok_or_else(||Error::Dependency("worker stdout".into()))?;
+    let run=async {
+        input.write_all(&bytes).await?;input.shutdown().await?;drop(input);
+        let mut bytes=vec![];output.take(16*1024*1024).read_to_end(&mut bytes).await?;
+        if !child.wait().await?.success(){return Err(Error::Dependency("simulation worker failed".into()));}
+        Ok::<SimulationResult,Error>(serde_json::from_slice(&bytes)?)
+    };
+    match tokio::time::timeout(timeout,run).await {
+        Ok(result)=>result,Err(_)=>{child.kill().await?;let _=child.wait().await;
+            let mut result=SimulationResult::unavailable("wall-time budget exhausted; worker killed");result.status=SimulationStatus::Timeout;Ok(result)}
+    }
+}
