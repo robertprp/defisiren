@@ -100,3 +100,35 @@ impl SubmissionBackend for FlashbotsSubmission {
         Ok(serde_json::from_value(v["result"].clone())?)
     }
 }
+pub async fn modeled_protection(action:&Action,unprotected:&ReplayJob,protected:&ReplayJob)->AppResult<ProtectionProof> {
+    validate_replay_pair(action,unprotected,protected)?;
+    let victim=action.target;
+    let attack=isolated(unprotected,Duration::from_secs(3)).await?;
+    let defense=isolated(protected,Duration::from_secs(3)).await?;
+    let harmed=attack.deltas.iter().any(|d|d.address==victim && d.net.as_ref().is_some_and(|n|n.starts_with('-')));
+    let protected_ok=matches!(defense.status,SimulationStatus::Revert|SimulationStatus::Success)
+        && defense.unresolved.is_empty() && !defense.deltas.iter().any(|d|d.address==victim && d.net.as_ref().is_some_and(|n|n.starts_with('-')));
+    Ok(ProtectionProof {action_digest:digest(action)?,state_hash:action.state_hash,attack_harm_observed:harmed,protected_invariants_hold:protected_ok,simulation:defense})
+}
+
+pub fn validate_replay_pair(action:&Action,unprotected:&ReplayJob,protected:&ReplayJob)->AppResult<()> {
+    if unprotected.snapshot.state.chain_id!=action.chain_id
+        || unprotected.snapshot.state.block_hash!=action.state_hash
+        || serde_json::to_value(&unprotected.snapshot)?!=serde_json::to_value(&protected.snapshot)?
+        || unprotected.synthetic_fixture!=protected.synthetic_fixture {
+        return Err(Error::Denied("protection replay state/configuration mismatch".into()));
+    }
+    if protected.transactions.len()!=unprotected.transactions.len()+1 {
+        return Err(Error::Denied("protection replay must add exactly the authorized action".into()));
+    }
+    let expected=serde_json::to_value(&unprotected.transactions)?;
+    for (index,tx) in protected.transactions.iter().enumerate() {
+        if tx.caller!=action.signer || tx.to!=Some(action.target) || tx.data!=action.calldata
+            || tx.value!=action.value || tx.nonce!=action.nonce || tx.gas!=action.gas
+            || tx.gas_price>action.max_fee_per_gas {continue;}
+        let remaining:Vec<_>=protected.transactions.iter().enumerate()
+            .filter_map(|(i,tx)|(i!=index).then_some(tx)).collect();
+        if serde_json::to_value(remaining)?==expected {return Ok(());}
+    }
+    Err(Error::Denied("replay changed observed transactions or did not insert the authorized action".into()))
+}
