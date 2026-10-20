@@ -1,0 +1,21 @@
+#![forbid(unsafe_code)]
+pub mod analysis;
+pub mod api;
+pub mod chain;
+pub mod config;
+pub mod contracts;
+pub mod core;
+pub mod detection;
+pub mod enrichment;
+pub mod events;
+pub mod funding;
+pub mod ingestion;
+pub mod llm;
+pub mod response;
+pub mod services;
+pub mod simulation;
+pub mod store;
+pub mod telemetry;
+pub mod telegram;
+mod benchmark;
+pub use benchmark::run as benchmark;
