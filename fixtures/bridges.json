@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "license": "CC0-1.0",
+  "provenance": "Original synthetic protocol-layout vectors; no mainnet execution claimed",
+  "base": {
+    "source": {
+      "chain_id": 1,
+      "hash": "0x00000000000000000000000000000000000000000000000000000000000000c9",
+      "source": "synthetic_fixture",
+      "observed_at": "2026-10-06T12:00:00Z",
+      "stage": "included",
+      "ordering": "block_ordered",
+      "position": {
+        "block_number": 10000001,
+        "block_hash": "0x0000000000000000000000000000000000000000000000000000000000000065",
+        "transaction_index": 0,
+        "log_index": null
+      },
+      "from": "0x00000000000000000000000000000000000a11ce",
+      "to": "0x49048044d57e1c92a77f79988d21fa8faf74e97e",
+      "nonce": 0,
+      "tx_type": 2,
+      "input": "0x",
+      "value": "0x0",
+      "success": true,
+      "created": null,
+      "logs": [
+        {
+          "address": "0x49048044d57e1c92a77f79988d21fa8faf74e97e",
+          "topics": [
+            "0xb3813568d9991fc951961fcb4c784893574240a28925604d09fc577c55bb7c32",
+            "0x00000000000000000000000000000000000000000000000000000000000a11ce",
+            "0x000000000000000000000000000000000000000000000000000000000000cafe",
+            "0x0000000000000000000000000000000000000000000000000000000000000000"
+          ],
+          "data": "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000049000000000000000000000000000000000000000000000000002386f26fc10000000000000000000000000000000000000000000000000000002386f26fc100000000000000030d40000000000000000000000000000000000000000000000000",
+          "index": 7,
+          "removed": false
+        }
+      ],
+      "calls": [],
+      "trace_complete": false,
+      "envelope": {
+        "fixture": true,
+        "license": "CC0-1.0"
+      }
+    },
+    "destination": {
+      "chain_id": 8453,
+      "hash": "0x00000000000000000000000000000000000000000000000000000000000000ca",
+      "source": "synthetic_fixture",
+      "observed_at": "2026-10-06T12:00:00Z",
+      "stage": "included",
+      "ordering": "block_ordered",
+      "position": {
+        "block_number": 1,
+        "block_hash": "0x00000000000000000000000000000000000000000000000000000000000001f5",
+        "transaction_index": 0,
+        "log_index": null
+      },
+      "from": "0x00000000000000000000000000000000000a11ce",
+      "to": "0x000000000000000000000000000000000000cafe",
+      "nonce": 0,
+      "tx_type": 126,
+      "input": "0x",
+      "value": "0x2386f26fc10000",
+      "success": true,
+      "created": null,
+      "logs": [],
+      "calls": [],
+      "trace_complete": false,
+      "envelope": {
+        "sourceHash": "0x8bec30780a2b2fc6582e289f26457b016e6ddfbee09e71002370746c37ffc1c0",
+        "fixture": true
+      }
+    },
+    "expected_id": "0x8bec30780a2b2fc6582e289f26457b016e6ddfbee09e71002370746c37ffc1c0"
+  },
+  "arbitrum": {
+    "source": {
+      "chain_id": 1,
+      "hash": "0x00000000000000000000000000000000000000000000000000000000000000cb",
+      "source": "synthetic_fixture",
+      "observed_at": "2026-10-06T12:00:00Z",
+      "stage": "included",
+      "ordering": "block_ordered",
+      "position": {
+        "block_number": 10000001,
+        "block_hash": "0x0000000000000000000000000000000000000000000000000000000000000065",
+        "transaction_index": 0,
+        "log_index": null
+      },
+      "from": "0x00000000000000000000000000000000000a11ce",
+      "to": "0x4dbd4fc535ac27206064b68ffcf827b0a60bab3f",
+      "nonce": 0,
+      "tx_type": 2,
+      "input": "0x",
+      "value": "0x0",
+      "success": true,
+      "created": null,
+      "logs": [
+        {
+          "address": "0x8315177ab297ba92a06054ce80a67ed4dbd7ed3a",
+          "topics": [
+            "0x5e3c1311ea442664e8b1611bfabef659120ea7a0a2cfc0667700bebc69cbffe1",
+            "0x000000000000000000000000000000000000000000000000000000000000002a",
+            "0x0000000000000000000000000000000000000000000000000000000000000000"
+          ],
+          "data": "0x0000000000000000000000004dbd4fc535ac27206064b68ffcf827b0a60bab3f000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000011110000000000000000000000000000000a22dfab8016c77b8609ff7884189ea0df19487486173ee25df0a4cac6426c79a1c81f0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000006ac4e2c0",
+          "index": 8,
+          "removed": false
+        },
+        {
+          "address": "0x4dbd4fc535ac27206064b68ffcf827b0a60bab3f",
+          "topics": [
+            "0xff64905f73a67fb594e0f940a8075a860db489ad991e032f48c81123eb52d60b",
+            "0x000000000000000000000000000000000000000000000000000000000000002a"
+          ],
+          "data": "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000034000000000000000000000000000000000000cafe000000000000000000000000000000000000000000000000002386f26fc10000000000000000000000000000",
+          "index": 9,
+          "removed": false
+        }
+      ],
+      "calls": [],
+      "trace_complete": false,
+      "envelope": {
+        "fixture": true,
+        "license": "CC0-1.0"
+      }
+    },
+    "destination": {
+      "chain_id": 42161,
+      "hash": "0xa5ba2cbbba0c5e6fbf2718135b0b373275c3b098e70df71e109e4ecc69d358bc",
+      "source": "synthetic_fixture",
+      "observed_at": "2026-10-06T12:00:00Z",
+      "stage": "included",
+      "ordering": "block_ordered",
+      "position": {
+        "block_number": 1,
+        "block_hash": "0x0000000000000000000000000000000000000000000000000000000000000259",
+        "transaction_index": 0,
+        "log_index": null
+      },
+      "from": "0x11110000000000000000000000000000000a22df",
+      "to": "0x000000000000000000000000000000000000cafe",
+      "nonce": 0,
+      "tx_type": 100,
+      "input": "0x",
+      "value": "0x2386f26fc10000",
+      "success": true,
+      "created": null,
+      "logs": [],
+      "calls": [],
+      "trace_complete": false,
+      "envelope": {
+        "fixture": true
+      }
+    },
+    "expected_id": "0xa5ba2cbbba0c5e6fbf2718135b0b373275c3b098e70df71e109e4ecc69d358bc"
+  }
+}
