@@ -1,0 +1,78 @@
+{
+  "snapshot": {
+    "state": {
+      "chain_id": 1,
+      "block_hash": "0x00000000000000000000000000000000000000000000000000000000000003e7",
+      "transaction_index": 0,
+      "overlay_id": "synthetic-fixture-v1",
+      "execution_config": "ethereum-cancun-fixture/1"
+    },
+    "number": 10000003,
+    "timestamp": 1791288000,
+    "basefee": "0x1",
+    "coinbase": "0x0000000000000000000000000000000000000fee",
+    "gas_limit": 30000000,
+    "accounts": {
+      "0x00000000000000000000000000000000000a11ce": {
+        "balance": "0x8ac7230489e80000",
+        "nonce": 0,
+        "code": "0x",
+        "storage": {},
+        "storage_complete": true
+      },
+      "0x0000000000000000000000000000000000000b0b": {
+        "balance": "0x8ac7230489e80000",
+        "nonce": 0,
+        "code": "0x",
+        "storage": {},
+        "storage_complete": true
+      },
+      "0x0000000000000000000000000000000000001000": {
+        "balance": "0xde0b6b3a7640000",
+        "nonce": 1,
+        "code": "0x60003560e01c80638456cb5914602557638da5cb5b14604c5760005415606a5760006000fd5b33730000000000000000000000000000000000000b0b1460455760006000fd5b6001600055005b730000000000000000000000000000000000000b0b60005260206000f35b600060006000600047335af15000",
+        "storage": {},
+        "storage_complete": true
+      },
+      "0x0000000000000000000000000000000000000fee": {
+        "balance": "0x0",
+        "nonce": 0,
+        "code": "0x",
+        "storage": {},
+        "storage_complete": true
+      },
+      "0x6b182f1488e8efeb2eb298155ed5bd7ff8a14042": null
+    },
+    "block_hashes": {}
+  },
+  "transactions": [
+    {
+      "caller": "0x00000000000000000000000000000000000a11ce",
+      "to": null,
+      "data": "0x6001600c60003960016000f300",
+      "value": "0x0",
+      "nonce": 0,
+      "gas": 100000,
+      "gas_price": "0x2"
+    },
+    {
+      "caller": "0x0000000000000000000000000000000000000b0b",
+      "to": "0x0000000000000000000000000000000000001000",
+      "data": "0x8456cb59",
+      "value": "0x0",
+      "nonce": 0,
+      "gas": 100000,
+      "gas_price": "0x2"
+    },
+    {
+      "caller": "0x00000000000000000000000000000000000a11ce",
+      "to": "0x0000000000000000000000000000000000001000",
+      "data": "0xdeadbeef",
+      "value": "0x0",
+      "nonce": 1,
+      "gas": 100000,
+      "gas_price": "0x2"
+    }
+  ],
+  "synthetic_fixture": true
+}
