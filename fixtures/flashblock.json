@@ -1,0 +1,16 @@
+{
+  "chainId": "0x2105",
+  "hash": "0x000000000000000000000000000000000000000000000000000000000000012d",
+  "from": "0x00000000000000000000000000000000000a11ce",
+  "to": "0x000000000000000000000000000000000000cafe",
+  "nonce": "0x1",
+  "type": "0x2",
+  "input": "0x",
+  "value": "0x0",
+  "blockNumber": "0x64",
+  "blockHash": null,
+  "transactionIndex": "0x0",
+  "contractAddress": null,
+  "status": "0x1",
+  "logs": []
+}
