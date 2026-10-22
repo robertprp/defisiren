@@ -1,0 +1,38 @@
+{
+  "schema_version": "1",
+  "license": "CC0-1.0",
+  "origin": "Original hand-assembled synthetic EVM fixtures; no real attack transaction or mainnet block data",
+  "chain_id": 1,
+  "chain_context": "Synthetic Cancun on chain-id 1, not historical Ethereum",
+  "block_hashes": [
+    "0x0000000000000000000000000000000000000000000000000000000000000065",
+    "0x0000000000000000000000000000000000000000000000000000000000000066",
+    "0x0000000000000000000000000000000000000000000000000000000000000067"
+  ],
+  "transaction_order": [
+    "0x0000000000000000000000000000000000000000000000000000000000000001",
+    "0x0000000000000000000000000000000000000000000000000000000000000002",
+    "0x0000000000000000000000000000000000000000000000000000000000000003"
+  ],
+  "expected": [
+    "funding_watch",
+    "suspicious_deployment",
+    "sequence_continuation",
+    "unusual_outflow"
+  ],
+  "local_execution": {
+    "harmful": "target loses 1000000000000000000 native base units",
+    "protected": "owner pause succeeds; later harmful call reverts; target retains full balance"
+  },
+  "limitations": [
+    "No real chain-native differential dataset",
+    "No statistical precision/recall claims from this small synthetic corpus"
+  ],
+  "created_contract": "0x6b182f1488e8efeb2eb298155ed5bd7ff8a14042",
+  "protocol_vectors": {
+    "bridges": "bridges.json",
+    "flashblocks": "flashblock.json",
+    "description": "Synthetic direct native deposit layouts and preconfirmation envelope; expected IDs independently calculated from protocol formulas. No provider or native-client conformance claim.",
+    "tests": "tests/bridges_feeds.rs"
+  }
+}
