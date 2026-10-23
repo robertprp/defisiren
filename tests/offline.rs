@@ -83,3 +83,38 @@ fn live_unsigned_and_native_families_reject_generic_execution(){
     job.synthetic_fixture=true;job.snapshot.state.chain_id=42161;
     assert!(matches!(simulation::execute(job).unwrap().status,SimulationStatus::Unsupported));
 }
+#[test]
+fn response_rejects_policy_and_state_mismatches(){
+    let policy:ResponsePolicy=serde_json::from_str(include_str!("../fixtures/policy.json")).unwrap();
+    let action:Action=serde_json::from_str(include_str!("../fixtures/action.json")).unwrap();
+    let simulation=simulation::execute(serde_json::from_str(include_str!("../fixtures/protected.json")).unwrap()).unwrap();
+    let proof=response::ProtectionProof{action_digest:response::digest(&action).unwrap(),state_hash:action.state_hash,attack_harm_observed:true,protected_invariants_hold:true,simulation};
+    assert!(response::validate(&policy,&action,action.state_time,action.state_hash,&policy.authority_result,&proof,false).is_ok());
+    let mut wrong_context=proof.clone();
+    wrong_context.simulation.state.as_mut().unwrap().chain_id=56;
+    assert!(response::validate(&policy,&action,action.state_time,action.state_hash,&policy.authority_result,&wrong_context,false).is_err());
+    for n in 0..7{
+        let mut bad=action.clone();match n{0=>bad.chain_id=56,1=>bad.expires_at=bad.state_time,2=>bad.state_hash=B256::ZERO,3=>bad.calldata=Bytes::from_static(&[0,0,0,0]),4=>bad.destination=Some(Address::ZERO),5=>bad.signer=Address::ZERO,_=>bad.gas+=1};
+        assert!(response::validate(&policy,&bad,action.state_time,action.state_hash,&policy.authority_result,&proof,false).is_err());
+    }
+    assert!(response::validate(&policy,&action,action.state_time,action.state_hash,&[],&proof,false).is_err());
+    assert!(response::validate(&policy,&action,action.state_time,action.state_hash,&policy.authority_result,&proof,true).is_err());
+}
+#[test]
+fn journal_recovers_partial_tail_and_rejects_corruption_and_full_disk_budget(){
+    let directory=std::env::temp_dir().join(format!("chain-siren-test-{}",uuid::Uuid::new_v4()));std::fs::create_dir(&directory).unwrap();
+    let path=directory.join("test.wal");let record=Accepted::Block(record(0));let journal=Journal::open(&path,1_000_000,100_000).unwrap();journal.append(&record).unwrap();
+    use std::io::Write;std::fs::OpenOptions::new().append(true).open(&path).unwrap().write_all(&[0,1]).unwrap();assert_eq!(journal.recover().unwrap().len(),1);
+    let bytes=std::fs::metadata(&path).unwrap().len();drop(journal);let full=Journal::open(&path,bytes,100_000).unwrap();assert!(full.append(&record).is_err());
+    let mut contents=std::fs::read(&path).unwrap();contents[40]^=1;std::fs::write(&path,contents).unwrap();assert!(full.recover().is_err());drop(full);std::fs::remove_dir_all(directory).unwrap();
+}
+#[test]
+fn reverted_ancestor_invalidates_internal_transfers(){
+    let trace=serde_json::json!({"type":"CALL","from":Address::ZERO,"to":Address::repeat_byte(1),"error":"revert","calls":[{"type":"CALL","from":Address::repeat_byte(1),"to":Address::repeat_byte(2),"value":"0x64"}]});
+    let calls=siren_service::ingestion::flatten_trace(&trace,10).unwrap();assert!(calls[1].error.is_some());assert!(siren_service::ingestion::flatten_trace(&trace,1).is_err());
+}
+#[test]
+fn malicious_fingerprint_is_exact_not_similarity(){
+    let a=analysis::analyze(&[0x60,1,0],100).unwrap();let b=analysis::analyze(&[0x60,2,0],100).unwrap();assert_eq!(a.normalized_hash,b.normalized_hash);assert_ne!(a.exact_hash,b.exact_hash);assert_eq!(a.exact_hash,keccak256([0x60,1,0]));
+}
+
