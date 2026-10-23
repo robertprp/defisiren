@@ -46,3 +46,40 @@ async fn dust_shared_accounts_and_hop_budget_stop_propagation(){
     o.from=o.to.unwrap();o.to=Some(Address::repeat_byte(0x52));assert_eq!(state.propagate(&o,&cfg.funding,&[]).unwrap()[0].hop,2);
     o.from=o.to.unwrap();o.to=Some(Address::repeat_byte(0x53));assert!(state.propagate(&o,&cfg.funding,&[]).unwrap().is_empty());
 }
+#[test]
+fn instruction_boundaries_ignore_push_payload(){
+    let code=[0x63,0xf1,0xf4,0xf0,0xff,0x00];let a=analysis::analyze(&code,100).unwrap();
+    assert_eq!(a.calls,0);assert_eq!(a.delegates,0);assert_eq!(a.creates,0);assert_eq!(a.instruction_offsets,vec![0,5]);
+    assert!(analysis::analyze(&[0x7f,1],100).unwrap().truncated_push);
+    assert_ne!(a.exact_hash,a.normalized_hash);
+}
+#[test]
+fn delegation_and_minimal_clone_are_state_candidates(){
+    let address=Address::repeat_byte(0x24);let mut delegation=vec![0xef,1,0];delegation.extend_from_slice(address.as_slice());
+    assert_eq!(analysis::analyze(&delegation,100).unwrap().delegated_account,Some(address));
+    let clone=hex::decode(format!("363d3d373d3d3d363d73{}5af43d82803e903d91602b57fd5bf3",hex::encode(address))).unwrap();
+    assert_eq!(analysis::analyze(&clone,100).unwrap().minimal_clone,Some(address));
+}
+#[test]
+fn local_sequence_harms_and_authorized_pause_blocks(){
+    let attack:simulation::ReplayJob=serde_json::from_str(include_str!("../fixtures/harmful.json")).unwrap();
+    let defense:simulation::ReplayJob=serde_json::from_str(include_str!("../fixtures/protected.json")).unwrap();
+    let action:Action=serde_json::from_str(include_str!("../fixtures/action.json")).unwrap();
+    let harmed=simulation::execute(attack).unwrap();assert!(matches!(harmed.status,SimulationStatus::Success),"{harmed:?}");
+    assert!(harmed.deltas.iter().any(|d|d.address==action.target&&d.net.as_deref()==Some("-1000000000000000000")));
+    let saved=simulation::execute(defense).unwrap();assert!(matches!(saved.status,SimulationStatus::Revert),"{saved:?}");
+    assert!(!saved.deltas.iter().any(|d|d.address==action.target&&d.net.as_ref().is_some_and(|n|n.starts_with('-'))));
+}
+#[test]
+fn missing_snapshot_state_never_means_zero(){
+    let mut job:simulation::ReplayJob=serde_json::from_str(include_str!("../fixtures/harmful.json")).unwrap();
+    let target=job.transactions[1].to.unwrap();job.snapshot.accounts.remove(&target);
+    let result=simulation::execute(job).unwrap();assert!(matches!(result.status,SimulationStatus::Inconclusive));assert!(!result.unresolved.is_empty());
+}
+#[test]
+fn live_unsigned_and_native_families_reject_generic_execution(){
+    let mut job:simulation::ReplayJob=serde_json::from_str(include_str!("../fixtures/harmful.json")).unwrap();job.synthetic_fixture=false;
+    assert!(matches!(simulation::execute(job.clone()).unwrap().status,SimulationStatus::Unsupported));
+    job.synthetic_fixture=true;job.snapshot.state.chain_id=42161;
+    assert!(matches!(simulation::execute(job).unwrap().status,SimulationStatus::Unsupported));
+}
