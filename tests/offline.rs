@@ -118,3 +118,41 @@ fn malicious_fingerprint_is_exact_not_similarity(){
     let a=analysis::analyze(&[0x60,1,0],100).unwrap();let b=analysis::analyze(&[0x60,2,0],100).unwrap();assert_eq!(a.normalized_hash,b.normalized_hash);assert_ne!(a.exact_hash,b.exact_hash);assert_eq!(a.exact_hash,keccak256([0x60,1,0]));
 }
 
+#[test]
+fn committed_journal_checkpoint_can_reopen_and_accept_next_record(){
+    let directory=std::env::temp_dir().join(format!("siren-checkpoint-{}",uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&directory).unwrap();
+    let path=directory.join("accepted.wal");
+    let journal=Journal::open(&path,1_000_000,100_000).unwrap();
+    journal.append(&Accepted::Block(record(0))).unwrap();
+    assert!(!journal.checkpoint_committed(false).unwrap());
+    // In production this call occurs only after synchronous PostgreSQL commit of all frames.
+    assert!(journal.checkpoint_committed(true).unwrap());
+    assert!(journal.read_at(0).unwrap().is_none());
+    journal.append(&Accepted::Block(record(1))).unwrap();drop(journal);
+    let reopened=Journal::open(&path,1_000_000,100_000).unwrap();
+    let (event,end)=reopened.read_at(0).unwrap().unwrap();
+    assert!(matches!(event,Accepted::Block(b) if b.number==record(1).number));
+    assert!(reopened.read_at(end).unwrap().is_none());drop(reopened);
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn protection_replay_rejects_modified_attack_or_substituted_state() {
+    let action:Action=serde_json::from_str(include_str!("../fixtures/action.json")).unwrap();
+    let attack:simulation::ReplayJob=serde_json::from_str(include_str!("../fixtures/harmful.json")).unwrap();
+    let protected:simulation::ReplayJob=serde_json::from_str(include_str!("../fixtures/protected.json")).unwrap();
+    assert!(response::validate_replay_pair(&action,&attack,&protected).is_ok());
+    let mut changed=protected.clone();
+    changed.transactions.last_mut().unwrap().data=Bytes::from_static(&[0]);
+    assert!(response::validate_replay_pair(&action,&attack,&changed).is_err());
+    let mut changed=protected.clone();
+    changed.snapshot.state.block_hash=B256::ZERO;
+    assert!(response::validate_replay_pair(&action,&attack,&changed).is_err());
+    let mut changed=protected.clone();
+    changed.transactions[1].caller=Address::ZERO;
+    assert!(response::validate_replay_pair(&action,&attack,&changed).is_err());
+    let mut changed=protected.clone();
+    changed.transactions.remove(1);
+    assert!(response::validate_replay_pair(&action,&attack,&changed).is_err());
+}
