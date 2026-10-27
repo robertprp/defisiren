@@ -1,0 +1,73 @@
+name = "chain-siren"
+listen = "0.0.0.0:8080"
+database_env = "DATABASE_URL"
+data_dir = "/data"
+mode = "observe"
+journal_max_bytes = 268435456
+max_input_bytes = 16777216
+rpc_concurrency = 16
+trace_candidates_per_block = 8
+poll_ms = 1000
+shutdown_seconds = 30
+max_reorg_depth = 128
+api_requests_per_minute = 120
+known_bad_hashes = []
+shared_accounts = []
+
+[funding]
+recent_seconds = 86400
+max_pre_nonce = 3
+watch_seconds = 604800
+max_hops = 2
+max_fanout = 16
+minimum_native = "0x2386f26fc10000"
+max_profiles = 100000
+
+[[chains]]
+id = 1
+family = "ethereum"
+rpc_env = ["ETH_RPC_URL"]
+ws_env = "ETH_WS_URL"
+start_block = 9116966
+pending = true
+trace = true
+finality_depth = 64
+
+[[chains]]
+id = 8453
+family = "op"
+rpc_env = ["BASE_RPC_URL"]
+preconfirmed_ws_env = "BASE_FLASHBLOCKS_WS_URL"
+start_block = 0
+pending = false
+trace = true
+finality_depth = 64
+
+[[chains]]
+id = 56
+family = "bsc"
+rpc_env = ["BSC_RPC_URL"]
+ws_env = "BSC_WS_URL"
+start_block = 8159279
+pending = true
+trace = true
+finality_depth = 64
+
+[[chains]]
+id = 42161
+family = "nitro"
+rpc_env = ["ARB_RPC_URL"]
+sequencer_ws_env = "ARB_SEQUENCER_RELAY_WS_URL"
+start_block = 0
+pending = false
+trace = true
+finality_depth = 64
+
+# Synthetic demo enrollment only. Replace with reviewed production addresses and limits.
+[[protected]]
+chain_id = 1
+address = "0x0000000000000000000000000000000000001000"
+name = "Synthetic vulnerable protocol"
+native_outflow_limit = "0xb1a2bc2ec50000"
+authorized_admins = ["0x0000000000000000000000000000000000000b0b"]
+governance = false
