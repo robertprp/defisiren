@@ -63,3 +63,37 @@ fn inbox_hash_mismatch_and_malformed_abi_are_rejected(){
     source.logs[0].data=Bytes::from(vec![0xff;64]);
     assert!(bridge::sources(&source).is_err());
 }
+#[test]
+fn flashblocks_preserve_order_without_claiming_inclusion(){
+    let raw:Value=serde_json::from_str(include_str!("../fixtures/flashblock.json")).unwrap();
+    let observation=feeds::flashblock_transaction(raw.clone(),8453).unwrap();
+    assert_eq!(observation.stage,Stage::Preconfirmed);
+    assert_eq!(observation.ordering,Ordering::Sequenced);
+    assert_eq!(observation.position.block_hash,None);
+    assert_eq!(observation.position.block_number,Some(100));
+    assert!(feeds::flashblock_transaction(raw.clone(),1).is_err());
+    let mut wrong=raw;wrong["chainId"]=serde_json::json!("0x1");
+    assert!(feeds::flashblock_transaction(wrong,8453).is_err());
+}
+#[test]
+fn nitro_framing_preserves_batch_order_and_reports_system_messages(){
+    // Arbitrary signed bytes exercise framing only; not signature validation or EVM conformance.
+    let a=[4u8,2,0xc0];let b=[4u8,0xf8,0x00];let system=[12u8,0];
+    let mut batch=vec![3u8];
+    for child in [&a[..],&system[..],&b[..]]{
+        batch.extend_from_slice(&(child.len() as u64).to_be_bytes());batch.extend_from_slice(child);
+    }
+    let (hashes,unsupported)=feeds::nitro_signed_hashes(&batch,10).unwrap();
+    assert_eq!(hashes,vec![keccak256(&a[1..]),keccak256(&b[1..])]);assert_eq!(unsupported,1);
+    assert!(feeds::nitro_signed_hashes(&batch,1).is_err());
+    batch.pop();assert!(feeds::nitro_signed_hashes(&batch,10).is_err());
+    assert!(feeds::nitro_signed_hashes(&[],10).is_err());
+}
+#[test]
+fn nitro_nested_batches_are_bounded(){
+    let mut input=vec![4,1];
+    for _ in 0..18{
+        let mut outer=vec![3];outer.extend_from_slice(&(input.len() as u64).to_be_bytes());outer.extend(input);input=outer;
+    }
+    assert!(feeds::nitro_signed_hashes(&input,100).is_err());
+}
