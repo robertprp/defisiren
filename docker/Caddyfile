@@ -1,0 +1,5 @@
+{$SIREN_HOST} {
+  @private path /metrics /health/*
+  respond @private 404
+  reverse_proxy app:8080
+}
