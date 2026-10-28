@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:17.6-bookworm
+    environment:
+      POSTGRES_DB: siren
+      POSTGRES_USER: siren
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["postgres:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U siren -d siren"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      DATABASE_URL: postgres://siren:${POSTGRES_PASSWORD}@postgres:5432/siren
+      ETH_RPC_URL: ${ETH_RPC_URL:-}
+      ETH_WS_URL: ${ETH_WS_URL:-}
+      BASE_RPC_URL: ${BASE_RPC_URL:-}
+      BASE_FLASHBLOCKS_WS_URL: ${BASE_FLASHBLOCKS_WS_URL:-}
+      BSC_RPC_URL: ${BSC_RPC_URL:-}
+      BSC_WS_URL: ${BSC_WS_URL:-}
+      ARB_RPC_URL: ${ARB_RPC_URL:-}
+      ARB_SEQUENCER_RELAY_WS_URL: ${ARB_SEQUENCER_RELAY_WS_URL:-}
+    command: ["--config", "/app/config/container.toml", "run"]
+    ports: ["127.0.0.1:8080:8080"]
+    volumes: ["evidence:/data", "../config:/app/config:ro"]
+    depends_on:
+      postgres: {condition: service_healthy}
+    stop_grace_period: 40s
+    mem_limit: 4g
+    cpus: 4
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: ["telemetry"]
+    volumes: ["./prometheus.yml:/etc/prometheus/prometheus.yml:ro"]
+    ports: ["127.0.0.1:9090:9090"]
+  caddy:
+    image: caddy:2.10.0
+    profiles: ["tls"]
+    environment:
+      SIREN_HOST: ${SIREN_HOST:-localhost}
+    volumes: ["./Caddyfile:/etc/caddy/Caddyfile:ro", "caddy:/data"]
+    ports: ["443:443", "80:80"]
+volumes:
+  postgres:
+  evidence:
+  caddy:
