@@ -1,0 +1,39 @@
+name: Rust
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: siren
+          POSTGRES_PASSWORD: test-only
+          POSTGRES_DB: siren_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U siren -d siren_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgres://siren:test-only@localhost:5432/siren_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88.0
+        with:
+          components: rustfmt, clippy
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+      - run: cargo test --test database db_atomic -- --ignored --test-threads=1
+      - run: psql -h localhost -U siren -d postgres -c "CREATE DATABASE siren_demo"
+        env:
+          PGPASSWORD: test-only
+      - run: cargo run -- --config config/offline.toml demo
+        env:
+          DATABASE_URL: postgres://siren:test-only@localhost:5432/siren_demo
+      - run: cargo run --release -- benchmark --iterations 100000
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check advisories licenses sources
