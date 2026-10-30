@@ -27,3 +27,20 @@ Findings are explainable observations:
 
 Missing current code, unknown calldata, untraced helper deployments and unknown counterparties stay unresolved. Allowlists only change known-admin context and do not suppress native budget findings.
 
+## Bytecode
+
+Instruction scanning respects PUSH operand boundaries. PUSH4 values are selector candidates; PUSH20 values are address candidates. Similarity v1 zeros all PUSH operands; it does not strip Solidity metadata or prove semantic equivalence. Full bytecode Keccak remains the exact fingerprint.
+
+Recognized EIP-1167 clones and EIP-7702 code designators are resolution candidates. The CLI reads an EIP-1967 implementation slot at an explicit block hash but does not perform full proxy-family resolution.
+
+## Simulation
+
+Native included tracing delegates exact pre-transaction reconstruction and fork rules to the configured chain client. A prestate diff is requested separately. The code verifies the block hash on both sides of the request. The client may be unavailable, incorrect or lack historical state; there is no independent differential evidence yet.
+
+Local REVM accepts only synthetic complete-state jobs with an explicit Cancun fixture execution configuration and chain 1 or 31337. The chain-id-1 fixture is not a historical Ethereum execution. Its balances, signatures/callers, parent hash, ordering, randomness and timestamps are synthetic and declared.
+
+Missing accounts, code, storage or block hashes produce an error/inconclusive result. Explicitly absent accounts and complete storage maps are the only cases in which absent state can mean zero. Nonce, fee and balance validation remain enabled. Same-nonce alternatives cannot be applied as a valid sequence without nonce validation rejecting them.
+
+The CLI launches local replay in a disposable subprocess with a wall-time deadline, input bound, transaction-count bound and gas bounds. Included native traces are not speculative preemption tests. Production execute_authorized mode remains disabled.
+
+Bridge vectors cover direct native Base Portal v0 and Arbitrum Inbox kind-12 deposits. Message identity, successful canonical execution and both counterpart messages are required. Unsupported variants do not acquire bridge attribution. Synthetic message layouts are not live bridge-conformance evidence.
