@@ -74,3 +74,40 @@ async fn replay(s: &Services, q: ReplayQuery, stream: &str) -> Result<Json<Value
     ))
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct RevisionQuery {
+    #[serde(default)]
+    after: i64,
+    #[serde(default = "default_limit")]
+    limit: i64,
+}
+
+pub(super) async fn revisions(
+    State(s): State<Arc<Services>>,
+    Path(id): Path<Uuid>,
+    Query(q): Query<RevisionQuery>,
+) -> Result<Json<Value>, StatusCode> {
+    if q.after < 0 || !(1..=256).contains(&q.limit) {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+    let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM incidents WHERE id=$1)")
+        .bind(id)
+        .fetch_one(&s.store.pool)
+        .await
+        .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
+    if !exists {
+        return Err(StatusCode::NOT_FOUND);
+    }
+    let rows: Vec<Value> = sqlx::query_scalar(
+        "SELECT data FROM finding_revisions WHERE incident_id=$1 AND revision>$2 ORDER BY revision LIMIT $3")
+        .bind(id).bind(q.after).bind(q.limit).fetch_all(&s.store.pool).await
+        .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
+    let next_after = rows
+        .last()
+        .and_then(|r| r["revision"].as_i64())
+        .unwrap_or(q.after);
+    Ok(Json(json!({"incident_id": id, "next_after": next_after,
+        "page_full": rows.len() == q.limit as usize, "revisions": rows})))
+}
+
