@@ -1,0 +1,470 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:chain-siren:findings:1.0",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "incident_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "cursor": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "chain_id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "source": {
+      "type": "string"
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "position": {
+      "$ref": "#/$defs/position"
+    },
+    "ordering": {
+      "enum": [
+        "unknown",
+        "candidate",
+        "sequenced",
+        "block_ordered"
+      ]
+    },
+    "finality": {
+      "enum": [
+        "pending",
+        "preconfirmed",
+        "included",
+        "safe",
+        "finalized",
+        "reorged",
+        "replaced",
+        "expired"
+      ]
+    },
+    "finding_type": {
+      "type": "string"
+    },
+    "severity": {
+      "enum": [
+        "informational",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "addresses": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^0x[0-9a-fA-F]{40}$"
+      }
+    },
+    "suspected_victims": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^0x[0-9a-fA-F]{40}$"
+      }
+    },
+    "observed_victims": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^0x[0-9a-fA-F]{40}$"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidence"
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rule": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "points": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "rule",
+          "version",
+          "points",
+          "evidence_ids"
+        ]
+      }
+    },
+    "detector_version": {
+      "type": "string"
+    },
+    "simulation": {
+      "$ref": "#/$defs/simulation"
+    },
+    "asset_deltas": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/delta"
+      }
+    },
+    "enrichment_complete": {
+      "type": "boolean"
+    },
+    "reviewed": {
+      "type": "boolean"
+    },
+    "retracted": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema_version",
+    "event_id",
+    "incident_id",
+    "revision",
+    "cursor",
+    "chain_id",
+    "source",
+    "observed_at",
+    "position",
+    "ordering",
+    "finality",
+    "finding_type",
+    "severity",
+    "confidence",
+    "addresses",
+    "suspected_victims",
+    "observed_victims",
+    "evidence",
+    "components",
+    "detector_version",
+    "simulation",
+    "asset_deltas",
+    "enrichment_complete",
+    "reviewed",
+    "retracted"
+  ],
+  "$defs": {
+    "position": {
+      "type": "object",
+      "properties": {
+        "block_number": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "block_hash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transaction_index": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "log_index": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "block_number",
+        "block_hash",
+        "transaction_index",
+        "log_index"
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "transaction": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data": {}
+      },
+      "required": [
+        "id",
+        "kind",
+        "description",
+        "transaction",
+        "data"
+      ]
+    },
+    "price": {
+      "type": "object",
+      "properties": {
+        "usd_decimal": {
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?$"
+        },
+        "source": {
+          "type": "string"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "decimals": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "usd_decimal",
+        "source",
+        "observed_at",
+        "decimals"
+      ]
+    },
+    "delta": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{40}$"
+        },
+        "asset": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{40}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "net": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "basis": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "price": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/price"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "address",
+        "asset",
+        "net",
+        "basis",
+        "confidence",
+        "price"
+      ]
+    },
+    "state": {
+      "type": "object",
+      "properties": {
+        "chain_id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "block_hash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{64}$"
+        },
+        "transaction_index": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "overlay_id": {
+          "type": "string"
+        },
+        "execution_config": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "chain_id",
+        "block_hash",
+        "transaction_index",
+        "overlay_id",
+        "execution_config"
+      ]
+    },
+    "simulation": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "success",
+            "revert",
+            "timeout",
+            "inconclusive",
+            "unsupported",
+            "needs_dependency"
+          ]
+        },
+        "fidelity": {
+          "type": "string"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/state"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unresolved": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gas_used": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "elapsed_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        },
+        "deltas": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/delta"
+          }
+        }
+      },
+      "required": [
+        "status",
+        "fidelity",
+        "state",
+        "assumptions",
+        "unresolved",
+        "gas_used",
+        "elapsed_ms",
+        "evidence",
+        "deltas"
+      ]
+    }
+  }
+}
