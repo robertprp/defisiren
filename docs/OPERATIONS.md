@@ -49,3 +49,42 @@ The fixture pause policy is enabled only as input to isolated validation. The po
 | benchmark --iterations N | Repeated-envelope decode/dedup/cheap-screen microbenchmark |
 | demo | Isolated synthetic database/WS/REVM response demonstration |
 
+## Provider prerequisites and configuration
+
+Use environment-variable references from config/example.toml. Never log endpoint credentials or serialize whole configuration. No monitor private key is required. Four chain nodes or RPC subscriptions are external prerequisites.
+
+Configure start_block explicitly for each deployment. Example Base/Arbitrum start at zero to avoid inventing a coverage start; scanning from genesis can be very expensive. Changing a start height changes historical coverage and must be recorded. Ethereum/BSC example starts align with configured pool registry entries.
+
+Required RPC methods: eth_chainId, eth_blockNumber, eth_getBlockByNumber with full transactions, eth_getTransactionReceipt. Pool probes also need eth_getCode and eth_call. Native analysis needs debug_traceTransaction with callTracer and preferably prestateTracer diff mode, and sufficient history for the queried block. Pending subscriptions need a genuine eth_subscribe newPendingTransactions source plus transaction hydration. Lack of archive or trace access is degradation, not zero state.
+
+Missing chain credentials leave that chain absent from active handles and unhealthy in readiness. A failed pool ABI/code probe blocks that chain's canonical loop. Capability probing repeats about every minute, between bounded catch-up turns. RPC retries are bounded with jitter; pending disconnects report unrecoverable ephemeral gaps. Canonical RPC fills missed included blocks.
+
+Mode observe is the default. Mode simulate also runs the native evidence enrichment worker. execute_authorized is rejected until the missing execution service and conformance checks are implemented.
+
+## API and TLS
+
+Use an Authorization: Bearer header; keys in query strings are unsupported. Browser-only clients needing authentication headers require an appropriate backend/session gateway. Do not put a permanent key into a WebSocket URL.
+
+Serve external traffic through the Caddy TLS profile or another maintained TLS proxy. Compose exposes the raw API only on loopback. Restrict metrics and health routes to operators. The in-process server is HTTP and does not terminate TLS.
+
+Use /v1/chains to inspect degradation; /health/ready is a readiness summary, not proof of complete trace/finality coverage. /ws/findings and /ws/reviewed take after, chain_id and severity filters. Save the cursor after application processing and tolerate event-ID redelivery.
+
+## Failure runbook
+
+- Provider outage: inspect per-chain capability/probe age and errors, restore access, resume from committed cursors. Never substitute an endpoint with a different chain/state.
+- Gap/reorg: preserve evidence, inspect parent hashes and canonical branch. Recovery beyond max_reorg_depth currently needs an operator-reviewed clean checkpoint; automatic deep recovery is absent.
+- Database outage: accepted journal records remain; restore PostgreSQL and restart for idempotent replay. A durability-health failure remains latched until restart.
+- Disk full/checksum failure: stop ingestion, preserve files/database and expand storage or perform audited recovery. Post-commit reclamation does not discard uncommitted frames; preserve the journal during failed recovery.
+- Slow consumers: reconnect with the last processed cursor. HTTP 410 requires historical REST inspection and a fresh stream baseline.
+- Simulation failure: retain observational findings and unresolved dependencies. Never execute on an unsupported or inconclusive result.
+- Response incident: production execution is disabled. Do not remove that gate to bypass missing signer/nonce/role/proof checks.
+- Telegram failure: restore credentials/destination, inspect delivery_outbox attempts/next_attempt. Duplicate notifications after a crash are possible.
+
+## Retention and capacity
+
+No automatic retention worker is shipped. Recommended policy pending implementation: outbox 7 days, canonical replay window at least max_reorg_depth plus verified safe checkpoint, routine observations 7 days, incident revisions and response audit 90 days or protocol requirements, large evidence 30 days. Do not delete referenced evidence or canonical snapshots needed for rewind.
+
+Journal caps default to 256 MiB live / 16 MiB offline. Committed journal frames are reclaimed atomically at half the cap, and after successful startup recovery. Acceptance stops after database/journal failure; uncommitted frames cannot be reclaimed. Crash-injection validation remains outstanding. Back up PostgreSQL and evidence consistently.
+
+Resource settings bound RPC concurrency, input sizes, candidate trace count, profile count, hop/fanout and shutdown time. Optional analysis can be skipped at trace-budget saturation, which is counted. The implementation does not yet provide protected-protocol reserved queues or measured sustained-load capacity.
+
