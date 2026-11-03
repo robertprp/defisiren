@@ -1,0 +1,510 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "chain-siren",
+    "version": "0.1.0",
+    "description": "Implementation under verification; see docs/STATUS.md."
+  },
+  "paths": {
+    "/v1/incidents": {
+      "get": {
+        "summary": "/v1/incidents",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response; see operator documentation"
+          },
+          "401": {
+            "description": "Invalid bearer key"
+          },
+          "429": {
+            "description": "Rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        }
+      }
+    },
+    "/v1/incidents/{id}": {
+      "get": {
+        "summary": "/v1/incidents/{id}",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response; see operator documentation"
+          },
+          "401": {
+            "description": "Invalid bearer key"
+          },
+          "429": {
+            "description": "Rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/v1/addresses/{chain_id}/{address}": {
+      "get": {
+        "summary": "/v1/addresses/{chain_id}/{address}",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response; see operator documentation"
+          },
+          "401": {
+            "description": "Invalid bearer key"
+          },
+          "429": {
+            "description": "Rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "chain_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/v1/chains": {
+      "get": {
+        "summary": "/v1/chains",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response; see operator documentation"
+          },
+          "401": {
+            "description": "Invalid bearer key"
+          },
+          "429": {
+            "description": "Rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "summary": "/health/live",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Response; see operator documentation"
+          },
+          "401": {
+            "description": "Invalid bearer key"
+          },
+          "429": {
+            "description": "Rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "/health/ready",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Response; see operator documentation"
+          },
+          "401": {
+            "description": "Invalid bearer key"
+          },
+          "429": {
+            "description": "Rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "/metrics",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Response; see operator documentation"
+          },
+          "401": {
+            "description": "Invalid bearer key"
+          },
+          "429": {
+            "description": "Rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        }
+      }
+    },
+    "/ws/findings": {
+      "get": {
+        "summary": "/ws/findings",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "101": {
+            "description": "Finding revisions and heartbeat messages"
+          },
+          "401": {
+            "description": "Bearer key required"
+          },
+          "410": {
+            "description": "Cursor expired"
+          },
+          "503": {
+            "description": "Database unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/ws/reviewed": {
+      "get": {
+        "summary": "/ws/reviewed",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "101": {
+            "description": "Finding revisions and heartbeat messages"
+          },
+          "401": {
+            "description": "Bearer key required"
+          },
+          "410": {
+            "description": "Cursor expired"
+          },
+          "503": {
+            "description": "Database unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/v1/findings": {
+      "get": {
+        "summary": "Poll findings with resumable stream cursors",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "description": "Exclusive cursor; use next_after from the previous response.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum records scanned per page.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 256,
+              "default": 100
+            }
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "description": "Exact chain filter.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "description": "Exact severity filter.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object with stream, findings, next_after, scanned and page_full. Cursor advances over filtered records; page_full means another poll may be needed, not that more results are guaranteed."
+          },
+          "400": {
+            "description": "Invalid or unknown query parameter"
+          },
+          "401": {
+            "description": "Invalid bearer key"
+          },
+          "410": {
+            "description": "Cursor predates stream retention floor"
+          },
+          "429": {
+            "description": "Rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        }
+      }
+    },
+    "/v1/reviewed": {
+      "get": {
+        "summary": "Poll reviewed with resumable stream cursors",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "description": "Exclusive cursor; use next_after from the previous response.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum records scanned per page.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 256,
+              "default": 100
+            }
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "description": "Exact chain filter.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "description": "Exact severity filter.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object with stream, findings, next_after, scanned and page_full. Cursor advances over filtered records; page_full means another poll may be needed, not that more results are guaranteed."
+          },
+          "400": {
+            "description": "Invalid or unknown query parameter"
+          },
+          "401": {
+            "description": "Invalid bearer key"
+          },
+          "410": {
+            "description": "Cursor predates stream retention floor"
+          },
+          "429": {
+            "description": "Rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        }
+      }
+    },
+    "/v1/incidents/{id}/revisions": {
+      "get": {
+        "summary": "Inspect incident revisions in ascending revision order",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "Exclusive cursor; use next_after from the previous response.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum records scanned per page.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 256,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object with incident_id, revisions, next_after and page_full. after and next_after are incident revision numbers, not stream cursors."
+          },
+          "400": {
+            "description": "Invalid path or query parameter"
+          },
+          "401": {
+            "description": "Invalid bearer key"
+          },
+          "404": {
+            "description": "Incident not found"
+          },
+          "429": {
+            "description": "Rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "Finding": {
+        "$ref": "./schemas/finding.v1.json"
+      }
+    }
+  }
+}
