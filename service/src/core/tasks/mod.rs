@@ -1,2 +1,2 @@
-pub mod manager;
 pub mod enrichment;
+pub mod manager;

@@ -1,25 +1,46 @@
-use crate::{api,chain::{BlockSource,ChainAdapter,PendingSource,TraceProvider,RpcAdapter},core::{signals,tasks::manager::TaskManager},detection,events::Accepted,ingestion,services::Services};
-use alloy_primitives::{Bytes,U256,keccak256};
+use crate::{
+    api,
+    chain::{BlockSource, ChainAdapter, PendingSource, RpcAdapter, TraceProvider},
+    core::{signals, tasks::manager::TaskManager},
+    detection,
+    events::Accepted,
+    ingestion,
+    services::Services,
+};
+use alloy_primitives::{keccak256, Bytes, U256};
 use serde_json::json;
-use siren_lib::{entity::*,AppResult,Error};
-use std::{sync::{Arc,atomic::Ordering},time::Duration};
+use siren_lib::{entity::*, AppResult, Error};
+use std::{
+    sync::{atomic::Ordering, Arc},
+    time::Duration,
+};
 use tokio_util::sync::CancellationToken;
 
-pub async fn run(s:Arc<Services>)->AppResult<()> {
+pub async fn run(s: Arc<Services>) -> AppResult<()> {
     tracing::info!(mode=?s.config.mode,chains=s.chains.len(),rpc_per_second=s.config.rpc_requests_per_second,"Monitor starting");
-    let mut tasks=TaskManager::default();
+    let mut tasks = TaskManager::default();
     for chain in &s.chains {
-        let a=chain.clone();let state=s.clone();let cancel=tasks.cancel.clone();
-        tasks.spawn(async move{canonical_loop(state,a,cancel).await});
-        for base in [true,false] {
-            if (base && chain.config.preconfirmed_ws_env.is_some()) || (!base && chain.config.sequencer_ws_env.is_some()) {
-                let state=s.clone();let adapter=chain.clone();let cancel=tasks.cancel.clone();
-                tasks.spawn(async move { crate::chain::feeds::supervise(state,adapter,cancel,base).await });
+        let a = chain.clone();
+        let state = s.clone();
+        let cancel = tasks.cancel.clone();
+        tasks.spawn(async move { canonical_loop(state, a, cancel).await });
+        for base in [true, false] {
+            if (base && chain.config.preconfirmed_ws_env.is_some())
+                || (!base && chain.config.sequencer_ws_env.is_some())
+            {
+                let state = s.clone();
+                let adapter = chain.clone();
+                let cancel = tasks.cancel.clone();
+                tasks.spawn(async move {
+                    crate::chain::feeds::supervise(state, adapter, cancel, base).await
+                });
             }
         }
         if chain.config.pending {
-            let (tx,mut rx)=tokio::sync::mpsc::channel(1024);
-            let a=chain.clone();let state=s.clone();let cancel=tasks.cancel.clone();
+            let (tx, mut rx) = tokio::sync::mpsc::channel(1024);
+            let a = chain.clone();
+            let state = s.clone();
+            let cancel = tasks.cancel.clone();
             tasks.spawn(async move{
                 let mut failures=0u32;
                 while !cancel.is_cancelled(){
@@ -33,43 +54,86 @@ pub async fn run(s:Arc<Services>)->AppResult<()> {
                     tokio::select!{_=cancel.cancelled()=>break,_=tokio::time::sleep(Duration::from_secs(retry_s))=>{}}
                 }Ok(())
             });
-            let state=s.clone();let cancel=tasks.cancel.clone();
+            let state = s.clone();
+            let cancel = tasks.cancel.clone();
             tasks.spawn(async move{
                 loop{tokio::select!{_=cancel.cancelled()=>{rx.close();break;},o=rx.recv()=>{match o{Some(o)=>{state.accept(Accepted::Observation(o)).await?;},None=>break}}}}
                 while let Some(o)=rx.recv().await{state.accept(Accepted::Observation(o)).await?;}Ok(())
             });
         }
     }
-    if s.config.telegram_token_env.is_some()&&s.config.telegram_chat_env.is_some(){let state=s.clone();let cancel=tasks.cancel.clone();tasks.spawn(async move{crate::telegram::run(state,cancel).await});}
-    if s.config.mode == Mode::Simulate { let state=s.clone();let cancel=tasks.cancel.clone();tasks.spawn(async move { crate::core::tasks::enrichment::run(state,cancel).await }); }
-    let listener=tokio::net::TcpListener::bind(&s.config.listen).await?;
-    let cancel=tasks.cancel.clone();let router=api::router(s.clone());
-    tasks.spawn(async move{axum::serve(listener,router).with_graceful_shutdown(cancel.cancelled_owned()).await?;Ok(())});
-    let result=tokio::select!{
+    if s.config.telegram_token_env.is_some() && s.config.telegram_chat_env.is_some() {
+        let state = s.clone();
+        let cancel = tasks.cancel.clone();
+        tasks.spawn(async move { crate::telegram::run(state, cancel).await });
+    }
+    if s.config.mode == Mode::Simulate {
+        let state = s.clone();
+        let cancel = tasks.cancel.clone();
+        tasks.spawn(async move { crate::core::tasks::enrichment::run(state, cancel).await });
+    }
+    let listener = tokio::net::TcpListener::bind(&s.config.listen).await?;
+    let cancel = tasks.cancel.clone();
+    let router = api::router(s.clone());
+    tasks.spawn(async move {
+        axum::serve(listener, router)
+            .with_graceful_shutdown(cancel.cancelled_owned())
+            .await?;
+        Ok(())
+    });
+    let result = tokio::select! {
         result=signals::shutdown()=>result,
         result=tasks.tasks.join_next()=>match result{Some(Ok(Err(e)))=>Err(e),_=>Err(Error::Dependency("supervised worker exited".into()))}
     };
-    let drained=tasks.shutdown(Duration::from_secs(s.config.shutdown_seconds)).await;
-    let j=s.journal.clone();tokio::task::spawn_blocking(move||j.flush()).await.map_err(|_|Error::Durability)??;
+    let drained = tasks
+        .shutdown(Duration::from_secs(s.config.shutdown_seconds))
+        .await;
+    let j = s.journal.clone();
+    tokio::task::spawn_blocking(move || j.flush())
+        .await
+        .map_err(|_| Error::Durability)??;
     result.and(drained)
 }
-async fn verify_pools(s:&Services,a:&RpcAdapter)->AppResult<()> {
-    for pool in s.pools.iter().filter(|p|p.chain_id==a.config.id){
-        let code:Bytes=serde_json::from_value(a.pool.request("eth_getCode",json!([pool.address,"latest"])).await?)?;
-        if code.is_empty(){return Err(Error::Provider("configured pool has no code".into()));}
-        let selector=format!("0x{}",hex::encode(&keccak256(b"denomination()")[..4]));
-        let raw:Bytes=serde_json::from_value(a.pool.request("eth_call",json!([{"to":pool.address,"data":selector},"latest"])).await?)?;
-        if raw.len()!=32||U256::from_be_slice(&raw)!=pool.denomination{return Err(Error::Provider("pool denomination/ABI probe failed".into()));}
-    }Ok(())
+async fn verify_pools(s: &Services, a: &RpcAdapter) -> AppResult<()> {
+    for pool in s.pools.iter().filter(|p| p.chain_id == a.config.id) {
+        let code: Bytes = serde_json::from_value(
+            a.pool
+                .request("eth_getCode", json!([pool.address, "latest"]))
+                .await?,
+        )?;
+        if code.is_empty() {
+            return Err(Error::Provider("configured pool has no code".into()));
+        }
+        let selector = format!("0x{}", hex::encode(&keccak256(b"denomination()")[..4]));
+        let raw: Bytes = serde_json::from_value(
+            a.pool
+                .request(
+                    "eth_call",
+                    json!([{"to":pool.address,"data":selector},"latest"]),
+                )
+                .await?,
+        )?;
+        if raw.len() != 32 || U256::from_be_slice(&raw) != pool.denomination {
+            return Err(Error::Provider("pool denomination/ABI probe failed".into()));
+        }
+    }
+    Ok(())
 }
-async fn canonical_loop(s:Arc<Services>,a:Arc<RpcAdapter>,cancel:CancellationToken)->AppResult<()> {
-    let mut initial_start=None;
-    let mut trace_available=false;
-    let mut last_status=std::time::Instant::now()-Duration::from_secs(60);
-    let mut last_progress=std::time::Instant::now()-Duration::from_secs(120);
-    let mut failures=0u32;let mut last_probe=std::time::Instant::now()-Duration::from_secs(120);
-    loop{
-        if cancel.is_cancelled(){return Ok(());}
+async fn canonical_loop(
+    s: Arc<Services>,
+    a: Arc<RpcAdapter>,
+    cancel: CancellationToken,
+) -> AppResult<()> {
+    let mut initial_start = None;
+    let mut trace_available = false;
+    let mut last_status = std::time::Instant::now() - Duration::from_secs(60);
+    let mut last_progress = std::time::Instant::now() - Duration::from_secs(120);
+    let mut failures = 0u32;
+    let mut last_probe = std::time::Instant::now() - Duration::from_secs(120);
+    loop {
+        if cancel.is_cancelled() {
+            return Ok(());
+        }
         let result=async{
             if last_probe.elapsed()>Duration::from_secs(60){
                 verify_pools(&s,&a).await?;
@@ -130,39 +194,68 @@ async fn canonical_loop(s:Arc<Services>,a:Arc<RpcAdapter>,cancel:CancellationTok
             }
             Ok::<_,Error>(())
         }.await;
-        let delay=match result{
-            Ok(())=>{if failures>0{tracing::info!(chain_id=a.config.id,"RPC recovered");}failures=0;s.config.poll_ms},
-            Err(Error::Durability)=>return Err(Error::Durability),
-            Err(e)=>{
-                failures=failures.saturating_add(1);s.metrics.rpc_errors.fetch_add(1,Ordering::Relaxed);
-                let delay=match &e{Error::RateLimited{retry_after_secs}=>retry_after_secs.saturating_mul(1000),_=>2000u64.saturating_mul(1u64<<failures.min(5)).min(60_000)};
-                if failures==1||failures.is_power_of_two(){tracing::warn!(chain_id=a.config.id,error=%e,retry_in_s=delay/1000,failures,"Chain waiting; durable cursor retained");}
+        let delay = match result {
+            Ok(()) => {
+                if failures > 0 {
+                    tracing::info!(chain_id = a.config.id, "RPC recovered");
+                }
+                failures = 0;
+                s.config.poll_ms
+            }
+            Err(Error::Durability) => return Err(Error::Durability),
+            Err(e) => {
+                failures = failures.saturating_add(1);
+                s.metrics.rpc_errors.fetch_add(1, Ordering::Relaxed);
+                let delay = match &e {
+                    Error::RateLimited { retry_after_secs } => {
+                        retry_after_secs.saturating_mul(1000)
+                    }
+                    _ => 2000u64.saturating_mul(1u64 << failures.min(5)).min(60_000),
+                };
+                if failures == 1 || failures.is_power_of_two() {
+                    tracing::warn!(chain_id=a.config.id,error=%e,retry_in_s=delay/1000,failures,"Chain waiting; durable cursor retained");
+                }
                 delay
             }
         };
-        tokio::select!{_=cancel.cancelled()=>return Ok(()),_=tokio::time::sleep(Duration::from_millis(delay+a.config.id%71))=>{}}
+        tokio::select! {_=cancel.cancelled()=>return Ok(()),_=tokio::time::sleep(Duration::from_millis(delay+a.config.id%71))=>{}}
     }
 }
 
-async fn report_progress(s:&Services,a:&RpcAdapter)->AppResult<()>{
-    let Some((height,_))=s.store.cursor(a.config.id).await? else{return Ok(());};
-    let mut points=vec![];
-    for tag in ["safe","finalized"]{
-        let point=match a.pool.request("eth_getBlockByNumber",json!([tag,false])).await{
-            Ok(value) if !value.is_null()=>{
-                let number=crate::chain::provider::quantity(&value["number"])?;
-                let hash=crate::chain::provider::field(&value,"hash")?;
-                (number<=height).then_some(crate::events::FinalityPoint{number,hash})
+async fn report_progress(s: &Services, a: &RpcAdapter) -> AppResult<()> {
+    let Some((height, _)) = s.store.cursor(a.config.id).await? else {
+        return Ok(());
+    };
+    let mut points = vec![];
+    for tag in ["safe", "finalized"] {
+        let point = match a
+            .pool
+            .request("eth_getBlockByNumber", json!([tag, false]))
+            .await
+        {
+            Ok(value) if !value.is_null() => {
+                let number = crate::chain::provider::quantity(&value["number"])?;
+                let hash = crate::chain::provider::field(&value, "hash")?;
+                (number <= height).then_some(crate::events::FinalityPoint { number, hash })
             }
-            _=>{s.metrics.rpc_errors.fetch_add(1,Ordering::Relaxed);None}
+            _ => {
+                s.metrics.rpc_errors.fetch_add(1, Ordering::Relaxed);
+                None
+            }
         };
         points.push(point);
     }
-    let finalized=points.pop().flatten();let safe=points.pop().flatten();
-    let observed_at=chrono::Utc::now();
-    s.accept(Accepted::Progress(crate::events::ChainProgress{
-        chain_id:a.config.id,source:"native_rpc_tags".into(),observed_at,safe,finalized,
-        pending_before:observed_at-chrono::Duration::seconds(s.config.pending_ttl_seconds),
-    })).await?;
+    let finalized = points.pop().flatten();
+    let safe = points.pop().flatten();
+    let observed_at = chrono::Utc::now();
+    s.accept(Accepted::Progress(crate::events::ChainProgress {
+        chain_id: a.config.id,
+        source: "native_rpc_tags".into(),
+        observed_at,
+        safe,
+        finalized,
+        pending_before: observed_at - chrono::Duration::seconds(s.config.pending_ttl_seconds),
+    }))
+    .await?;
     Ok(())
 }

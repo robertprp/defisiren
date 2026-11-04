@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 pub mod analysis;
 pub mod api;
+mod benchmark;
 pub mod chain;
 pub mod config;
 pub mod contracts;
@@ -15,7 +16,6 @@ pub mod response;
 pub mod services;
 pub mod simulation;
 pub mod store;
-pub mod telemetry;
 pub mod telegram;
-mod benchmark;
+pub mod telemetry;
 pub use benchmark::run as benchmark;

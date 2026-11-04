@@ -6,13 +6,29 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum Stage { Pending, Preconfirmed, Included, Safe, Finalized, Reorged, Replaced, Expired }
+pub enum Stage {
+    Pending,
+    Preconfirmed,
+    Included,
+    Safe,
+    Finalized,
+    Reorged,
+    Replaced,
+    Expired,
+}
 impl Stage {
-    pub fn canonical(self) -> bool { matches!(self, Self::Included | Self::Safe | Self::Finalized) }
+    pub fn canonical(self) -> bool {
+        matches!(self, Self::Included | Self::Safe | Self::Finalized)
+    }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum Ordering { Unknown, Candidate, Sequenced, BlockOrdered }
+pub enum Ordering {
+    Unknown,
+    Candidate,
+    Sequenced,
+    BlockOrdered,
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Position {
     pub block_number: Option<u64>,
@@ -79,7 +95,12 @@ pub struct Evidence {
     pub data: Value,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ScoreComponent { pub rule: String, pub version: String, pub points: u16, pub evidence_ids: Vec<String> }
+pub struct ScoreComponent {
+    pub rule: String,
+    pub version: String,
+    pub points: u16,
+    pub evidence_ids: Vec<String>,
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssetDelta {
     pub address: Address,
@@ -91,10 +112,22 @@ pub struct AssetDelta {
     pub price: Option<Price>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Price { pub usd_decimal: String, pub source: String, pub observed_at: DateTime<Utc>, pub decimals: u8 }
+pub struct Price {
+    pub usd_decimal: String,
+    pub source: String,
+    pub observed_at: DateTime<Utc>,
+    pub decimals: u8,
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum SimulationStatus { Success, Revert, Timeout, Inconclusive, Unsupported, NeedsDependency }
+pub enum SimulationStatus {
+    Success,
+    Revert,
+    Timeout,
+    Inconclusive,
+    Unsupported,
+    NeedsDependency,
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StateReference {
     pub chain_id: u64,
@@ -117,8 +150,17 @@ pub struct SimulationResult {
 }
 impl SimulationResult {
     pub fn unavailable(reason: impl Into<String>) -> Self {
-        Self { status: SimulationStatus::Unsupported, fidelity: "none".into(), state: None,
-            assumptions: vec![], unresolved: vec![reason.into()], gas_used: None, elapsed_ms: 0, evidence: vec![], deltas: vec![] }
+        Self {
+            status: SimulationStatus::Unsupported,
+            fidelity: "none".into(),
+            state: None,
+            assumptions: vec![],
+            unresolved: vec![reason.into()],
+            gas_used: None,
+            elapsed_ms: 0,
+            evidence: vec![],
+            deltas: vec![],
+        }
     }
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -204,7 +246,12 @@ pub struct Capability {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
-pub enum Mode { #[default] Observe, Simulate, ExecuteAuthorized }
+pub enum Mode {
+    #[default]
+    Observe,
+    Simulate,
+    ExecuteAuthorized,
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResponsePolicy {
     pub id: Uuid,

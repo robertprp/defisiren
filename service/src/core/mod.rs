@@ -1,3 +1,3 @@
 pub mod app;
-pub mod tasks;
 pub mod signals;
+pub mod tasks;
