@@ -20,7 +20,7 @@ jobs:
       DATABASE_URL: postgres://siren:test-only@localhost:5432/siren_test
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.88.0
+      - uses: dtolnay/rust-toolchain@1.99.1
         with:
           components: rustfmt, clippy
       - run: cargo fmt --all -- --check

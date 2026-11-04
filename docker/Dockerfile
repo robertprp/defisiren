@@ -1,4 +1,4 @@
-FROM rust:1.88.0-bookworm AS build
+FROM rust:1.99.1-bookworm AS build
 WORKDIR /app
 COPY . .
 RUN cargo build --release --bin chain-siren
