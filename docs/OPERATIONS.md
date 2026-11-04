@@ -110,3 +110,16 @@ The local configuration uses 2 requests/second, 2 concurrent operations per chai
 
 Doctor distinguishes reachable RPC endpoints from complete integration verification; successful probes alone no longer set live_integration_verified=true.
 
+## REST replay and incident history
+
+Authenticated `GET /v1/findings` and `GET /v1/reviewed` provide bounded polling of the same streams as the WebSocket endpoints. Both accept `after` (exclusive stream cursor, default 0), `limit` (1–256, default 100), and optional exact `chain_id` and `severity` filters. Unknown parameters, negative cursors and invalid limits return 400. Cursors belong to their individual stream.
+
+Responses contain `stream`, `findings`, `next_after`, `scanned`, and `page_full`. Persist `next_after` only after processing the page. Filtering happens within the scanned page: an empty findings list can still advance `next_after`. When `page_full` is true, immediately fetch another page; it does not guarantee more records. Otherwise poll again later. A cursor older than the retention floor returns 410.
+
+`GET /v1/incidents/{id}/revisions?after=0&limit=100` returns revisions in ascending order, including retractions. Its `after` and `next_after` values are **incident revision numbers**, independent of stream cursors. The response contains `incident_id`, `revisions`, `next_after`, and `page_full`. An unknown incident returns 404; an existing incident with no later revisions returns an empty page.
+
+Run the HTTP integration test against a fresh disposable database (it inserts fixtures and changes retention floors):
+
+```sh
+cargo test -p siren-service rest_replay_and_revision_history -- --ignored
+```
