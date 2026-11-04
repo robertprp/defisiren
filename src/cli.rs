@@ -26,6 +26,7 @@ struct Cli {
     #[command(subcommand)]
     command: Command,
 }
+
 #[derive(Subcommand)]
 enum Command {
     Run,
@@ -85,13 +86,16 @@ enum Command {
     #[command(hide = true)]
     SimulationWorker,
 }
+
 fn output(value: &impl serde::Serialize) -> AppResult<()> {
     println!("{}", serde_json::to_string_pretty(value)?);
     Ok(())
 }
+
 async fn store(cfg: &Config) -> AppResult<Arc<Store>> {
     Store::connect(&Config::secret(&cfg.database_env)?).await
 }
+
 fn adapter(cfg: &Config, chain: u64) -> AppResult<RpcAdapter> {
     let c = cfg
         .chains
@@ -100,6 +104,7 @@ fn adapter(cfg: &Config, chain: u64) -> AppResult<RpcAdapter> {
         .ok_or_else(|| Error::Invalid("chain not configured".into()))?;
     RpcAdapter::new(c.clone(), cfg)
 }
+
 pub async fn execute() -> AppResult<()> {
     let cli = Cli::parse();
     if matches!(cli.command, Command::SimulationWorker) {
@@ -362,6 +367,7 @@ pub async fn execute() -> AppResult<()> {
         Command::SimulationWorker => unreachable!(),
     }
 }
+
 async fn replay(s: &siren_service::services::Services, file: &std::path::Path) -> AppResult<()> {
     let bytes = tokio::fs::read(file).await?;
     if bytes.len() > 32 * 1024 * 1024 {

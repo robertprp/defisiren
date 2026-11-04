@@ -60,6 +60,7 @@ pub fn withdrawals(o: &Observation, pools: &[Pool]) -> AppResult<Vec<FundingEdge
     }
     Ok(edges)
 }
+
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct WatchState {
     pub profiles: BTreeMap<Address, Profile>,
@@ -67,12 +68,14 @@ pub struct WatchState {
     #[serde(default)]
     pub derived_only: BTreeSet<Address>,
 }
+
 impl WatchState {
     pub fn expire(&mut self, now: chrono::DateTime<chrono::Utc>) {
         self.profiles.retain(|_, p| p.watch_until >= now);
         self.derived_only.retain(|a| self.profiles.contains_key(a));
         self.fanout.retain(|a, _| self.profiles.contains_key(a));
     }
+
     pub fn add(&mut self, edge: FundingEdge, cfg: &FundingConfig) -> AppResult<()> {
         if !self.profiles.contains_key(&edge.to) && self.profiles.len() >= cfg.max_profiles {
             return Err(Error::Limit(
@@ -114,6 +117,7 @@ impl WatchState {
         }
         Ok(())
     }
+
     pub fn propagate(
         &mut self,
         o: &Observation,

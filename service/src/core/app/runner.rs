@@ -94,6 +94,7 @@ pub async fn run(s: Arc<Services>) -> AppResult<()> {
         .map_err(|_| Error::Durability)??;
     result.and(drained)
 }
+
 async fn verify_pools(s: &Services, a: &RpcAdapter) -> AppResult<()> {
     for pool in s.pools.iter().filter(|p| p.chain_id == a.config.id) {
         let code: Bytes = serde_json::from_value(
@@ -119,6 +120,7 @@ async fn verify_pools(s: &Services, a: &RpcAdapter) -> AppResult<()> {
     }
     Ok(())
 }
+
 async fn canonical_loop(
     s: Arc<Services>,
     a: Arc<RpcAdapter>,

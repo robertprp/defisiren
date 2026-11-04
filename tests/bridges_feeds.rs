@@ -11,6 +11,7 @@ fn fixture(name: &str) -> (Observation, Observation, B256) {
         serde_json::from_value(value[name]["expected_id"].clone()).unwrap(),
     )
 }
+
 #[test]
 fn bridge_ids_match_independent_protocol_vectors() {
     for name in ["base", "arbitrum"] {
@@ -22,6 +23,7 @@ fn bridge_ids_match_independent_protocol_vectors() {
         assert_eq!(messages[0].source_finality, Stage::Included);
     }
 }
+
 #[test]
 fn amounts_and_addresses_alone_never_correlate() {
     for name in ["base", "arbitrum"] {
@@ -37,6 +39,7 @@ fn amounts_and_addresses_alone_never_correlate() {
         assert!(!bridge::matches(&message, &destination).unwrap());
     }
 }
+
 #[test]
 fn bridge_requires_successful_canonical_source_and_destination() {
     for name in ["base", "arbitrum"] {
@@ -59,12 +62,14 @@ fn bridge_requires_successful_canonical_source_and_destination() {
         assert!(bridge::sources(&source).unwrap().is_empty());
     }
 }
+
 #[test]
 fn missing_inbox_data_does_not_create_a_counterpart() {
     let (mut source, _, _) = fixture("arbitrum");
     source.logs.pop();
     assert!(bridge::sources(&source).unwrap().is_empty());
 }
+
 #[test]
 fn inbox_hash_mismatch_and_malformed_abi_are_rejected() {
     let (mut source, _, _) = fixture("arbitrum");
@@ -76,6 +81,7 @@ fn inbox_hash_mismatch_and_malformed_abi_are_rejected() {
     source.logs[0].data = Bytes::from(vec![0xff; 64]);
     assert!(bridge::sources(&source).is_err());
 }
+
 #[test]
 fn flashblocks_preserve_order_without_claiming_inclusion() {
     let raw: Value = serde_json::from_str(include_str!("../fixtures/flashblock.json")).unwrap();
@@ -89,6 +95,7 @@ fn flashblocks_preserve_order_without_claiming_inclusion() {
     wrong["chainId"] = serde_json::json!("0x1");
     assert!(feeds::flashblock_transaction(wrong, 8453).is_err());
 }
+
 #[test]
 fn nitro_framing_preserves_batch_order_and_reports_system_messages() {
     // Arbitrary signed bytes exercise framing only; not signature validation or EVM conformance.
@@ -108,6 +115,7 @@ fn nitro_framing_preserves_batch_order_and_reports_system_messages() {
     assert!(feeds::nitro_signed_hashes(&batch, 10).is_err());
     assert!(feeds::nitro_signed_hashes(&[], 10).is_err());
 }
+
 #[test]
 fn nitro_nested_batches_are_bounded() {
     let mut input = vec![4, 1];

@@ -42,6 +42,7 @@ pub fn router(s: Arc<Services>) -> Router {
         .route("/metrics", get(metrics))
         .with_state(s)
 }
+
 async fn auth(
     State(s): State<Arc<Services>>,
     request: Request,
@@ -64,6 +65,7 @@ async fn auth(
         Err(_) => Err(StatusCode::SERVICE_UNAVAILABLE),
     }
 }
+
 #[derive(Deserialize, Default)]
 struct Filter {
     #[serde(default)]
@@ -72,6 +74,7 @@ struct Filter {
     severity: Option<String>,
     limit: Option<i64>,
 }
+
 async fn incidents(
     State(s): State<Arc<Services>>,
     Query(f): Query<Filter>,
@@ -80,6 +83,7 @@ async fn incidents(
         .bind(f.chain_id.map(|x|x as i64)).bind(f.limit.unwrap_or(100).clamp(1,256)).fetch_all(&s.store.pool).await.map_err(|_|StatusCode::SERVICE_UNAVAILABLE)?;
     Ok(Json(json!({"incidents":rows})))
 }
+
 async fn incident(
     State(s): State<Arc<Services>>,
     Path(id): Path<Uuid>,
@@ -91,6 +95,7 @@ async fn incident(
         .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
     value.map(Json).ok_or(StatusCode::NOT_FOUND)
 }
+
 async fn address(
     State(s): State<Arc<Services>>,
     Path((chain, address)): Path<(u64, String)>,
@@ -105,6 +110,7 @@ async fn address(
             .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
     value.map(Json).ok_or(StatusCode::NOT_FOUND)
 }
+
 async fn chains(State(s): State<Arc<Services>>) -> Result<Json<Value>, StatusCode> {
     let values: Vec<Value> = sqlx::query_scalar("SELECT data FROM capabilities ORDER BY chain_id")
         .fetch_all(&s.store.pool)
@@ -112,6 +118,7 @@ async fn chains(State(s): State<Arc<Services>>) -> Result<Json<Value>, StatusCod
         .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
     Ok(Json(json!({"chains":values})))
 }
+
 async fn ready(State(s): State<Arc<Services>>) -> Response {
     let db = sqlx::query("SELECT 1").execute(&s.store.pool).await.is_ok();
     let rows = sqlx::query(
@@ -136,6 +143,7 @@ async fn ready(State(s): State<Arc<Services>>) -> Response {
     let ready = db && s.healthy.load(Ordering::SeqCst) && missing.is_empty();
     (if ready{StatusCode::OK}else{StatusCode::SERVICE_UNAVAILABLE},Json(json!({"ready":ready,"database":db,"chains_without_recent_probe":missing,"coverage":"see /v1/chains"}))).into_response()
 }
+
 async fn metrics(State(s): State<Arc<Services>>) -> Response {
     (
         [(header::CONTENT_TYPE, "text/plain; version=0.0.4")],
@@ -143,6 +151,7 @@ async fn metrics(State(s): State<Arc<Services>>) -> Response {
     )
         .into_response()
 }
+
 async fn ws_findings(
     State(s): State<Arc<Services>>,
     Query(f): Query<Filter>,
@@ -150,6 +159,7 @@ async fn ws_findings(
 ) -> Result<Response, StatusCode> {
     upgrade(s, f, ws, "findings").await
 }
+
 async fn ws_reviewed(
     State(s): State<Arc<Services>>,
     Query(f): Query<Filter>,
@@ -157,6 +167,7 @@ async fn ws_reviewed(
 ) -> Result<Response, StatusCode> {
     upgrade(s, f, ws, "reviewed").await
 }
+
 async fn upgrade(
     s: Arc<Services>,
     f: Filter,
@@ -173,12 +184,14 @@ async fn upgrade(
         .max_frame_size(4096)
         .on_upgrade(move |socket| delivery(socket, s, f, stream)))
 }
+
 async fn send(socket: &mut WebSocket, message: Message) -> bool {
     matches!(
         tokio::time::timeout(Duration::from_secs(5), socket.send(message)).await,
         Ok(Ok(()))
     )
 }
+
 async fn delivery(mut socket: WebSocket, s: Arc<Services>, f: Filter, stream: &str) {
     let mut cursor = f.after;
     let mut tick = tokio::time::interval(Duration::from_millis(100));

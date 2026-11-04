@@ -19,9 +19,11 @@ use uuid::Uuid;
 pub struct Store {
     pub pool: PgPool,
 }
+
 fn db(_: sqlx::Error) -> Error {
     Error::Database
 }
+
 impl Store {
     pub async fn connect(url: &str) -> AppResult<Arc<Self>> {
         let pool = PgPoolOptions::new()
@@ -36,6 +38,7 @@ impl Store {
             .map_err(|_| Error::Database)?;
         Ok(Arc::new(Self { pool }))
     }
+
     pub async fn cursor(&self, chain: u64) -> AppResult<Option<(u64, B256)>> {
         let row =
             sqlx::query("SELECT block_number,block_hash FROM chain_cursors WHERE chain_id=$1")
@@ -52,6 +55,7 @@ impl Store {
         })
         .transpose()
     }
+
     pub async fn accept(
         &self,
         event: &Accepted,
@@ -307,6 +311,7 @@ impl Store {
         tx.commit().await.map_err(db)?;
         Ok(published)
     }
+
     pub async fn stream(&self, stream: &str, after: i64, limit: i64) -> AppResult<Vec<Value>> {
         let floor: i64 = sqlx::query_scalar("SELECT floor FROM stream_heads WHERE stream=$1")
             .bind(stream)
@@ -319,12 +324,14 @@ impl Store {
         Ok(sqlx::query_scalar("SELECT data FROM delivery_outbox WHERE stream=$1 AND cursor>$2 ORDER BY cursor LIMIT $3")
             .bind(stream).bind(after).bind(limit.clamp(1,256)).fetch_all(&self.pool).await.map_err(db)?)
     }
+
     pub async fn new_api_key(&self, name: &str) -> AppResult<String> {
         let key = format!("cs_{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple());
         sqlx::query("INSERT INTO api_clients(id,key_hash,name,expires_at) VALUES($1,$2,$3,now()+interval '90 days')")
             .bind(Uuid::new_v4()).bind(Sha256::digest(key.as_bytes()).to_vec()).bind(name).execute(&self.pool).await.map_err(db)?;
         Ok(key)
     }
+
     pub async fn authenticate(&self, key: &str, max_per_minute: u32) -> AppResult<bool> {
         if key.len() > 128 {
             return Ok(false);
@@ -346,6 +353,7 @@ impl Store {
         }
         Ok(true)
     }
+
     pub async fn watch(
         &self,
         chain: u64,
@@ -361,6 +369,7 @@ impl Store {
         Ok(())
     }
 }
+
 async fn insert_observation(
     tx: &mut Transaction<'_, Postgres>,
     o: &Observation,
@@ -374,6 +383,7 @@ async fn insert_observation(
         .bind(o.from.as_slice()).bind(o.nonce.to_string()).bind(serde_json::to_value(o)?).bind(o.stage.canonical()).execute(&mut **tx).await.map_err(db)?;
     Ok(result.rows_affected() > 0)
 }
+
 pub async fn publish(tx: &mut Transaction<'_, Postgres>, mut f: Finding) -> AppResult<Finding> {
     sqlx::query("SET LOCAL synchronous_commit=on")
         .execute(&mut **tx)

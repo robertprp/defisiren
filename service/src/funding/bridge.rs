@@ -21,6 +21,7 @@ pub struct BridgeSource {
     pub observed_at: chrono::DateTime<chrono::Utc>,
     pub provenance_url: String,
 }
+
 fn dynamic_bytes(data: &[u8]) -> AppResult<&[u8]> {
     if data.len() < 64 || U256::from_be_slice(&data[..32]) != U256::from(32) {
         return Err(Error::Invalid("bridge dynamic ABI offset".into()));
@@ -39,6 +40,7 @@ fn dynamic_bytes(data: &[u8]) -> AppResult<&[u8]> {
     }
     Ok(&data[64..64 + len])
 }
+
 pub fn op_source_hash(block_hash: B256, log_index: u64) -> B256 {
     let mut inner = [0u8; 64];
     inner[..32].copy_from_slice(block_hash.as_slice());
@@ -47,6 +49,7 @@ pub fn op_source_hash(block_hash: B256, log_index: u64) -> B256 {
     outer[32..].copy_from_slice(keccak256(inner).as_slice());
     keccak256(outer)
 }
+
 fn rlp_bytes(bytes: &[u8]) -> Vec<u8> {
     if bytes.len() == 1 && bytes[0] < 128 {
         return bytes.to_vec();
@@ -63,11 +66,13 @@ fn rlp_bytes(bytes: &[u8]) -> Vec<u8> {
     out.extend_from_slice(bytes);
     out
 }
+
 fn minimal(value: U256) -> Vec<u8> {
     let bytes = value.to_be_bytes::<32>();
     let first = bytes.iter().position(|b| *b != 0).unwrap_or(32);
     bytes[first..].to_vec()
 }
+
 pub fn arbitrum_deposit_hash(
     message_number: U256,
     aliased_sender: Address,
@@ -94,11 +99,13 @@ pub fn arbitrum_deposit_hash(
     encoded.extend(payload);
     keccak256(encoded)
 }
+
 pub fn alias(address: Address) -> Address {
     let offset = address!("1111000000000000000000000000000000001111");
     let sum = U256::from_be_slice(address.as_slice()) + U256::from_be_slice(offset.as_slice());
     Address::from_slice(&sum.to_be_bytes::<32>()[12..])
 }
+
 /// Narrow paths: direct native deposit into Base Portal v0 and Arbitrum Inbox kind 12.
 pub fn sources(o: &Observation) -> AppResult<Vec<BridgeSource>> {
     if o.chain_id != 1 || o.success != Some(true) || !o.stage.canonical() {
@@ -168,6 +175,7 @@ pub fn sources(o: &Observation) -> AppResult<Vec<BridgeSource>> {
     }
     Ok(out)
 }
+
 pub fn destination_id(o: &Observation) -> AppResult<Option<B256>> {
     if o.success != Some(true) || !o.stage.canonical() {
         return Ok(None);
@@ -183,6 +191,7 @@ pub fn destination_id(o: &Observation) -> AppResult<Option<B256>> {
         _ => Ok(None),
     }
 }
+
 pub fn matches(source: &BridgeSource, destination: &Observation) -> AppResult<bool> {
     Ok(destination.chain_id == source.destination_chain
         && destination_id(destination)? == Some(source.message_id)

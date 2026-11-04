@@ -6,6 +6,7 @@ pub struct TaskManager {
     pub cancel: CancellationToken,
     pub tasks: JoinSet<AppResult<()>>,
 }
+
 impl Default for TaskManager {
     fn default() -> Self {
         Self {
@@ -14,10 +15,12 @@ impl Default for TaskManager {
         }
     }
 }
+
 impl TaskManager {
     pub fn spawn(&mut self, future: impl Future<Output = AppResult<()>> + Send + 'static) {
         self.tasks.spawn(future);
     }
+
     pub async fn shutdown(&mut self, deadline: Duration) -> AppResult<()> {
         self.cancel.cancel();
         let drain = async {

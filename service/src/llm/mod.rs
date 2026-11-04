@@ -8,6 +8,7 @@ pub struct Explanation {
     pub classification: String,
     pub unresolved: Vec<String>,
 }
+
 pub fn validate_output(output: &Explanation, finding: &Finding) -> AppResult<()> {
     if output.summary.len() > 4096
         || output.evidence_ids.len() > 64
@@ -26,6 +27,7 @@ pub fn validate_output(output: &Explanation, finding: &Finding) -> AppResult<()>
     }
     Ok(())
 }
+
 /// Fixed integration boundary: an explanation cannot set deterministic findings or response authorization.
 pub async fn explain(
     client: &reqwest::Client,

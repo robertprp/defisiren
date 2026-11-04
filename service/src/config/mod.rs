@@ -36,6 +36,7 @@ pub struct Config {
     pub telegram_token_env: Option<String>,
     pub telegram_chat_env: Option<String>,
 }
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChainConfig {
@@ -52,6 +53,7 @@ pub struct ChainConfig {
     pub trace: bool,
     pub finality_depth: u64,
 }
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProtectedProtocol {
@@ -64,6 +66,7 @@ pub struct ProtectedProtocol {
     #[serde(default)]
     pub governance: bool,
 }
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct FundingConfig {
@@ -75,6 +78,7 @@ pub struct FundingConfig {
     pub minimum_native: U256,
     pub max_profiles: usize,
 }
+
 impl Default for FundingConfig {
     fn default() -> Self {
         Self {
@@ -88,12 +92,15 @@ impl Default for FundingConfig {
         }
     }
 }
+
 fn rpc_rate() -> u32 {
     5
 }
+
 fn pending_ttl() -> i64 {
     900
 }
+
 impl Config {
     pub async fn load(path: &Path) -> AppResult<Self> {
         let text = tokio::fs::read_to_string(path).await?;
@@ -102,6 +109,7 @@ impl Config {
         cfg.validate()?;
         Ok(cfg)
     }
+
     pub fn validate(&self) -> AppResult<()> {
         if self.name.is_empty()
             || self.rpc_concurrency == 0
@@ -142,6 +150,7 @@ impl Config {
         }
         Ok(())
     }
+
     pub fn secret(name: &str) -> AppResult<String> {
         std::env::var(name)
             .map_err(|_| Error::Dependency(format!("environment variable {name} is not set")))

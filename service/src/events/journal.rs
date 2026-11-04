@@ -14,6 +14,7 @@ pub struct Journal {
     max_frame: usize,
     _lock: File,
 }
+
 impl Journal {
     pub fn open(path: &Path, max_bytes: u64, max_frame: usize) -> AppResult<Self> {
         if let Some(parent) = path.parent() {
@@ -39,6 +40,7 @@ impl Journal {
             _lock: lock,
         })
     }
+
     pub fn append(&self, record: &Accepted) -> AppResult<()> {
         let bytes = serde_json::to_vec(record)?;
         if bytes.len() > self.max_frame {
@@ -56,6 +58,7 @@ impl Journal {
         file.sync_data().map_err(|_| Error::Durability)?;
         Ok(())
     }
+
     pub fn read_at(&self, offset: u64) -> AppResult<Option<(Accepted, u64)>> {
         let mut f = OpenOptions::new().read(true).write(true).open(&self.path)?;
         let total = f.metadata()?.len();
@@ -97,6 +100,7 @@ impl Journal {
             offset + 36 + len as u64,
         )))
     }
+
     pub fn recover(&self) -> AppResult<Vec<Accepted>> {
         let mut f = OpenOptions::new().read(true).write(true).open(&self.path)?;
         let mut result = Vec::new();
@@ -157,6 +161,7 @@ impl Journal {
         }
         Ok(true)
     }
+
     pub fn flush(&self) -> AppResult<()> {
         File::open(&self.path)?.sync_all()?;
         Ok(())

@@ -24,11 +24,13 @@ pub struct ProtectionProof {
     pub protected_invariants_hold: bool,
     pub simulation: SimulationResult,
 }
+
 pub fn digest(action: &Action) -> AppResult<B256> {
     let mut bytes = b"chain-siren/authorized-action/v1\0".to_vec();
     bytes.extend(serde_json::to_vec(action)?);
     Ok(keccak256(bytes))
 }
+
 pub fn validate(
     policy: &ResponsePolicy,
     action: &Action,
@@ -106,27 +108,32 @@ pub fn validate(
     }
     Ok(d)
 }
+
 pub struct KillSwitch(pub AtomicBool);
 impl Default for KillSwitch {
     fn default() -> Self {
         Self(AtomicBool::new(true))
     }
 }
+
 impl KillSwitch {
     pub fn active(&self) -> bool {
         self.0.load(Ordering::SeqCst)
     }
 }
+
 #[async_trait]
 pub trait Signer: Send + Sync {
     async fn sign(&self, action: &Action, approved_digest: B256) -> AppResult<Bytes>;
 }
+
 /// Signer deployment must independently validate the digest and policy. Monitoring never holds its key.
 pub struct RemoteSigner {
     pub endpoint: String,
     pub token_env: String,
     pub client: reqwest::Client,
 }
+
 #[async_trait]
 impl Signer for RemoteSigner {
     async fn sign(&self, action: &Action, approved_digest: B256) -> AppResult<Bytes> {
@@ -162,13 +169,16 @@ impl Signer for RemoteSigner {
         Ok(serde_json::from_value(v["raw_transaction"].clone())?)
     }
 }
+
 #[async_trait]
 pub trait SubmissionBackend: Send + Sync {
     async fn submit(&self, raw: &Bytes, max_block: u64) -> AppResult<B256>;
 }
+
 pub struct RpcSubmission {
     pub pool: Arc<ProviderPool>,
 }
+
 #[async_trait]
 impl SubmissionBackend for RpcSubmission {
     async fn submit(&self, raw: &Bytes, _max_block: u64) -> AppResult<B256> {
@@ -184,16 +194,19 @@ impl SubmissionBackend for RpcSubmission {
         )?)
     }
 }
+
 /// Authentication is computed for each exact JSON body; a static signature is invalid.
 #[async_trait]
 pub trait RelayAuthenticator: Send + Sync {
     async fn header(&self, body: &[u8]) -> AppResult<String>;
 }
+
 pub struct RemoteRelayAuthenticator {
     pub endpoint: String,
     pub token_env: String,
     pub client: reqwest::Client,
 }
+
 #[async_trait]
 impl RelayAuthenticator for RemoteRelayAuthenticator {
     async fn header(&self, body: &[u8]) -> AppResult<String> {
@@ -228,12 +241,14 @@ impl RelayAuthenticator for RemoteRelayAuthenticator {
             .ok_or_else(|| Error::Denied("relay auth header".into()))
     }
 }
+
 /// Flashbots eth_sendPrivateTransaction. No public fallback and no ordering guarantee.
 pub struct FlashbotsSubmission {
     pub endpoint: String,
     pub authenticator: Arc<dyn RelayAuthenticator>,
     pub client: reqwest::Client,
 }
+
 #[async_trait]
 impl SubmissionBackend for FlashbotsSubmission {
     async fn submit(&self, raw: &Bytes, max_block: u64) -> AppResult<B256> {
@@ -269,6 +284,7 @@ impl SubmissionBackend for FlashbotsSubmission {
         Ok(serde_json::from_value(v["result"].clone())?)
     }
 }
+
 pub async fn modeled_protection(
     action: &Action,
     unprotected: &ReplayJob,

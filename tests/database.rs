@@ -53,6 +53,7 @@ async fn db_atomic_replay_reorg_and_cursor_expiry() {
     assert!(db.authenticate(&key, 10).await.unwrap());
     assert!(!db.authenticate("invalid", 10).await.unwrap());
 }
+
 #[tokio::test]
 #[ignore = "requires explicit provider credentials; absence is unverified coverage"]
 async fn live_provider_capabilities() {

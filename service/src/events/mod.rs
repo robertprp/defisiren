@@ -10,11 +10,13 @@ pub struct RawFeed {
     pub ordering: Ordering,
     pub payload: serde_json::Value,
 }
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct FinalityPoint {
     pub number: u64,
     pub hash: alloy_primitives::B256,
 }
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ChainProgress {
     pub chain_id: u64,
@@ -24,6 +26,7 @@ pub struct ChainProgress {
     pub finalized: Option<FinalityPoint>,
     pub pending_before: chrono::DateTime<chrono::Utc>,
 }
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "payload", rename_all = "snake_case")]
 pub enum Accepted {

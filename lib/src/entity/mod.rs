@@ -16,11 +16,13 @@ pub enum Stage {
     Replaced,
     Expired,
 }
+
 impl Stage {
     pub fn canonical(self) -> bool {
         matches!(self, Self::Included | Self::Safe | Self::Finalized)
     }
 }
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Ordering {
@@ -29,6 +31,7 @@ pub enum Ordering {
     Sequenced,
     BlockOrdered,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Position {
     pub block_number: Option<u64>,
@@ -36,6 +39,7 @@ pub struct Position {
     pub transaction_index: Option<u64>,
     pub log_index: Option<u64>,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Log {
     pub address: Address,
@@ -44,6 +48,7 @@ pub struct Log {
     pub index: u64,
     pub removed: bool,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Call {
     pub kind: String,
@@ -54,6 +59,7 @@ pub struct Call {
     pub error: Option<String>,
     pub depth: u32,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Observation {
     pub chain_id: u64,
@@ -77,6 +83,7 @@ pub struct Observation {
     /// Exact provider envelope, including unsupported fields; never synthesized signatures.
     pub envelope: Value,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockBatch {
     pub chain_id: u64,
@@ -86,6 +93,7 @@ pub struct BlockBatch {
     pub timestamp: u64,
     pub observations: Vec<Observation>,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Evidence {
     pub id: String,
@@ -94,6 +102,7 @@ pub struct Evidence {
     pub transaction: Option<B256>,
     pub data: Value,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScoreComponent {
     pub rule: String,
@@ -101,6 +110,7 @@ pub struct ScoreComponent {
     pub points: u16,
     pub evidence_ids: Vec<String>,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssetDelta {
     pub address: Address,
@@ -111,6 +121,7 @@ pub struct AssetDelta {
     pub confidence: u16,
     pub price: Option<Price>,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Price {
     pub usd_decimal: String,
@@ -118,6 +129,7 @@ pub struct Price {
     pub observed_at: DateTime<Utc>,
     pub decimals: u8,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SimulationStatus {
@@ -128,6 +140,7 @@ pub enum SimulationStatus {
     Unsupported,
     NeedsDependency,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StateReference {
     pub chain_id: u64,
@@ -136,6 +149,7 @@ pub struct StateReference {
     pub overlay_id: String,
     pub execution_config: String,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SimulationResult {
     pub status: SimulationStatus,
@@ -148,6 +162,7 @@ pub struct SimulationResult {
     pub evidence: Vec<Evidence>,
     pub deltas: Vec<AssetDelta>,
 }
+
 impl SimulationResult {
     pub fn unavailable(reason: impl Into<String>) -> Self {
         Self {
@@ -163,6 +178,7 @@ impl SimulationResult {
         }
     }
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Finding {
     pub schema_version: String,
@@ -192,6 +208,7 @@ pub struct Finding {
     pub reviewed: bool,
     pub retracted: bool,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Profile {
     pub chain_id: u64,
@@ -208,6 +225,7 @@ pub struct Profile {
     pub funding: Vec<FundingEdge>,
     pub deployments: Vec<Address>,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FundingEdge {
     pub id: String,
@@ -229,6 +247,7 @@ pub struct FundingEdge {
     pub hop: u8,
     pub confidence: u16,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Capability {
     pub chain_id: u64,
@@ -244,6 +263,7 @@ pub struct Capability {
     pub verified_at: Option<DateTime<Utc>>,
     pub degraded: Vec<String>,
 }
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum Mode {
@@ -252,6 +272,7 @@ pub enum Mode {
     Simulate,
     ExecuteAuthorized,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResponsePolicy {
     pub id: Uuid,
@@ -273,6 +294,7 @@ pub struct ResponsePolicy {
     pub max_state_age_seconds: u64,
     pub enabled: bool,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Action {
     pub policy_id: Uuid,

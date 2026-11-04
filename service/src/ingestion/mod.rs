@@ -77,6 +77,7 @@ pub fn normalize(
         envelope: tx,
     })
 }
+
 pub fn flatten_trace(v: &Value, max_calls: usize) -> AppResult<Vec<Call>> {
     let mut stack = vec![(v, 0u32, false)];
     let mut calls = vec![];

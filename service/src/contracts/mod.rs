@@ -11,14 +11,17 @@ pub struct Pool {
     pub denomination: U256,
     pub provenance_url: String,
 }
+
 pub fn pools() -> AppResult<Vec<Pool>> {
     Ok(serde_json::from_str(include_str!(
         "../../../config/tornado.v1.json"
     ))?)
 }
+
 pub fn topic(signature: &str) -> B256 {
     keccak256(signature.as_bytes())
 }
+
 pub fn word_address(word: &[u8]) -> AppResult<Address> {
     if word.len() != 32 || word[..12].iter().any(|x| *x != 0) {
         return Err(Error::Invalid("noncanonical ABI address".into()));

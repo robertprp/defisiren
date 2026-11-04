@@ -18,11 +18,13 @@ fn record(index: usize) -> BlockBatch {
         _ => panic!("block"),
     }
 }
+
 async fn config() -> siren_service::config::Config {
     siren_service::config::Config::load(Path::new("config/example.toml"))
         .await
         .expect("config")
 }
+
 #[test]
 fn direct_and_relayed_recipient_is_not_sender() {
     let mut o = record(0).observations.remove(0);
@@ -34,6 +36,7 @@ fn direct_and_relayed_recipient_is_not_sender() {
     o.from = relayed[0].to;
     assert_eq!(funding::withdrawals(&o, &pools).unwrap()[0].to, o.from);
 }
+
 #[test]
 fn reverted_unrelated_removed_and_pending_do_not_prove_funding() {
     let original = record(0).observations.remove(0);
@@ -49,6 +52,7 @@ fn reverted_unrelated_removed_and_pending_do_not_prove_funding() {
         assert!(funding::withdrawals(&o, &pools).unwrap().is_empty());
     }
 }
+
 #[test]
 fn erc20_fee_is_denomination_minus_fee() {
     let mut o = record(0).observations.remove(0);
@@ -66,6 +70,7 @@ fn erc20_fee_is_denomination_minus_fee() {
     );
     assert_eq!(edge.fee, Some("17".into()));
 }
+
 #[tokio::test]
 async fn mixer_watch_is_neutral_old_nonce_does_not_become_fresh() {
     let cfg = config().await;
@@ -83,6 +88,7 @@ async fn mixer_watch_is_neutral_old_nonce_does_not_become_fresh() {
     assert_eq!(engine.watch.profiles[&o.from].freshness_confidence, 0);
     assert!(!engine.watch.profiles[&o.from].history_complete);
 }
+
 #[tokio::test]
 async fn dust_shared_accounts_and_hop_budget_stop_propagation() {
     let cfg = config().await;
@@ -110,6 +116,7 @@ async fn dust_shared_accounts_and_hop_budget_stop_propagation() {
     o.to = Some(Address::repeat_byte(0x53));
     assert!(state.propagate(&o, &cfg.funding, &[]).unwrap().is_empty());
 }
+
 #[test]
 fn instruction_boundaries_ignore_push_payload() {
     let code = [0x63, 0xf1, 0xf4, 0xf0, 0xff, 0x00];
@@ -121,6 +128,7 @@ fn instruction_boundaries_ignore_push_payload() {
     assert!(analysis::analyze(&[0x7f, 1], 100).unwrap().truncated_push);
     assert_ne!(a.exact_hash, a.normalized_hash);
 }
+
 #[test]
 fn delegation_and_minimal_clone_are_state_candidates() {
     let address = Address::repeat_byte(0x24);
@@ -142,6 +150,7 @@ fn delegation_and_minimal_clone_are_state_candidates() {
         Some(address)
     );
 }
+
 #[test]
 fn local_sequence_harms_and_authorized_pause_blocks() {
     let attack: simulation::ReplayJob =
@@ -168,6 +177,7 @@ fn local_sequence_harms_and_authorized_pause_blocks() {
         .iter()
         .any(|d| d.address == action.target && d.net.as_ref().is_some_and(|n| n.starts_with('-'))));
 }
+
 #[test]
 fn missing_snapshot_state_never_means_zero() {
     let mut job: simulation::ReplayJob =
@@ -178,6 +188,7 @@ fn missing_snapshot_state_never_means_zero() {
     assert!(matches!(result.status, SimulationStatus::Inconclusive));
     assert!(!result.unresolved.is_empty());
 }
+
 #[test]
 fn live_unsigned_and_native_families_reject_generic_execution() {
     let mut job: simulation::ReplayJob =
@@ -194,6 +205,7 @@ fn live_unsigned_and_native_families_reject_generic_execution() {
         SimulationStatus::Unsupported
     ));
 }
+
 #[test]
 fn response_rejects_policy_and_state_mismatches() {
     let policy: ResponsePolicy =
@@ -275,6 +287,7 @@ fn response_rejects_policy_and_state_mismatches() {
     )
     .is_err());
 }
+
 #[test]
 fn journal_recovers_partial_tail_and_rejects_corruption_and_full_disk_budget() {
     let directory = std::env::temp_dir().join(format!("chain-siren-test-{}", uuid::Uuid::new_v4()));
@@ -302,6 +315,7 @@ fn journal_recovers_partial_tail_and_rejects_corruption_and_full_disk_budget() {
     drop(full);
     std::fs::remove_dir_all(directory).unwrap();
 }
+
 #[test]
 fn reverted_ancestor_invalidates_internal_transfers() {
     let trace = serde_json::json!({"type":"CALL","from":Address::ZERO,"to":Address::repeat_byte(1),"error":"revert","calls":[{"type":"CALL","from":Address::repeat_byte(1),"to":Address::repeat_byte(2),"value":"0x64"}]});
@@ -309,6 +323,7 @@ fn reverted_ancestor_invalidates_internal_transfers() {
     assert!(calls[1].error.is_some());
     assert!(siren_service::ingestion::flatten_trace(&trace, 1).is_err());
 }
+
 #[test]
 fn malicious_fingerprint_is_exact_not_similarity() {
     let a = analysis::analyze(&[0x60, 1, 0], 100).unwrap();

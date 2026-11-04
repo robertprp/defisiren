@@ -20,11 +20,13 @@ pub trait ChainAdapter: Send + Sync {
     fn chain_id(&self) -> u64;
     async fn capabilities(&self) -> AppResult<Capability>;
 }
+
 #[async_trait]
 pub trait BlockSource: Send + Sync {
     async fn block(&self, number: u64) -> AppResult<BlockBatch>;
     async fn head(&self) -> AppResult<u64>;
 }
+
 #[async_trait]
 pub trait PendingSource: Send + Sync {
     async fn subscribe(
@@ -33,16 +35,19 @@ pub trait PendingSource: Send + Sync {
         cancel: CancellationToken,
     ) -> AppResult<()>;
 }
+
 #[async_trait]
 pub trait TraceProvider: Send + Sync {
     async fn trace(&self, hash: B256, height: u64, block_hash: B256) -> AppResult<Value>;
 }
+
 pub struct RpcAdapter {
     pub config: ChainConfig,
     pub pool: Arc<ProviderPool>,
     pub budget: usize,
     bulk_receipts: std::sync::atomic::AtomicBool,
 }
+
 impl RpcAdapter {
     pub fn new(config: ChainConfig, cfg: &Config) -> AppResult<Self> {
         Ok(Self {
@@ -53,11 +58,13 @@ impl RpcAdapter {
         })
     }
 }
+
 #[async_trait]
 impl ChainAdapter for RpcAdapter {
     fn chain_id(&self) -> u64 {
         self.config.id
     }
+
     async fn capabilities(&self) -> AppResult<Capability> {
         let head = self
             .pool
@@ -151,11 +158,13 @@ impl ChainAdapter for RpcAdapter {
             response_submission: vec![], verified_at: Some(Utc::now()), degraded })
     }
 }
+
 #[async_trait]
 impl BlockSource for RpcAdapter {
     async fn head(&self) -> AppResult<u64> {
         quantity(&self.pool.request("eth_blockNumber", json!([])).await?)
     }
+
     async fn block(&self, number: u64) -> AppResult<BlockBatch> {
         let raw = self
             .pool
@@ -263,12 +272,14 @@ impl BlockSource for RpcAdapter {
         })
     }
 }
+
 #[async_trait]
 impl TraceProvider for RpcAdapter {
     async fn trace(&self, hash: B256, height: u64, block_hash: B256) -> AppResult<Value> {
         self.pool.anchored("debug_traceTransaction", json!([hash,{"tracer":"callTracer","timeout":"5s","tracerConfig":{"withLog":true}}]), height, block_hash).await
     }
 }
+
 #[async_trait]
 impl PendingSource for RpcAdapter {
     async fn subscribe(

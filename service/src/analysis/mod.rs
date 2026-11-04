@@ -16,6 +16,7 @@ pub struct CodeAnalysis {
     pub delegated_account: Option<Address>,
     pub minimal_clone: Option<Address>,
 }
+
 /// Similarity v1 zeros PUSH operands only. It is never an exact malicious-code match.
 pub fn analyze(code: &[u8], max_bytes: usize) -> AppResult<CodeAnalysis> {
     if code.len() > max_bytes {

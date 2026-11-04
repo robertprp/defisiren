@@ -19,6 +19,7 @@ pub struct Engine {
     #[serde(default)]
     pub last_pruned_minute: i64,
 }
+
 pub fn candidate(o: &Observation, cfg: &Config) -> bool {
     o.to.is_none()
         || o.created.is_some()
@@ -37,6 +38,7 @@ pub fn candidate(o: &Observation, cfg: &Config) -> bool {
                 .is_some_and(|t| privilege_topics().contains(t))
         })
 }
+
 fn privilege_topics() -> &'static [B256] {
     static TOPICS: std::sync::OnceLock<Vec<B256>> = std::sync::OnceLock::new();
     TOPICS.get_or_init(|| {
@@ -53,6 +55,7 @@ fn privilege_topics() -> &'static [B256] {
         .collect()
     })
 }
+
 fn evidence(o: &Observation, kind: &str, description: &str, data: serde_json::Value) -> Evidence {
     Evidence {
         id: format!("{}:{}:{}", o.chain_id, o.hash, kind),
@@ -62,6 +65,7 @@ fn evidence(o: &Observation, kind: &str, description: &str, data: serde_json::Va
         data,
     }
 }
+
 pub fn finding(o: &Observation, kind: &str, ev: Vec<Evidence>, points: u16) -> Finding {
     let incident_id = Uuid::new_v5(
         &Uuid::NAMESPACE_OID,
@@ -107,6 +111,7 @@ pub fn finding(o: &Observation, kind: &str, ev: Vec<Evidence>, points: u16) -> F
         retracted: false,
     }
 }
+
 impl Engine {
     pub fn process(
         &mut self,

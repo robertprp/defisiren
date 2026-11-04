@@ -12,6 +12,7 @@ pub struct Metrics {
     pub simulation_errors: AtomicU64,
     pub unsupported_inputs: AtomicU64,
 }
+
 impl Metrics {
     pub fn render(&self) -> String {
         let entries = [
@@ -36,6 +37,7 @@ impl Metrics {
         out
     }
 }
+
 pub fn init() {
     use std::io::IsTerminal;
     let filter = tracing_subscriber::EnvFilter::try_from_default_env()

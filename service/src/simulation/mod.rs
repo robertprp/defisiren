@@ -17,6 +17,7 @@ use std::{
 pub trait SimulationBackend: Send + Sync {
     async fn simulate(&self, observation: &Observation) -> AppResult<SimulationResult>;
 }
+
 #[async_trait]
 impl SimulationBackend for RpcAdapter {
     async fn simulate(&self, o: &Observation) -> AppResult<SimulationResult> {
@@ -118,6 +119,7 @@ impl SimulationBackend for RpcAdapter {
         Ok(result)
     }
 }
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SnapshotAccount {
     pub balance: U256,
@@ -126,6 +128,7 @@ pub struct SnapshotAccount {
     pub storage: BTreeMap<U256, U256>,
     pub storage_complete: bool,
 }
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Snapshot {
     pub state: StateReference,
@@ -137,6 +140,7 @@ pub struct Snapshot {
     pub accounts: BTreeMap<Address, Option<SnapshotAccount>>,
     pub block_hashes: BTreeMap<u64, B256>,
 }
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ReplayTx {
     pub caller: Address,
@@ -147,17 +151,20 @@ pub struct ReplayTx {
     pub gas: u64,
     pub gas_price: U256,
 }
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ReplayJob {
     pub snapshot: Snapshot,
     pub transactions: Vec<ReplayTx>,
     pub synthetic_fixture: bool,
 }
+
 struct StrictDb {
     snapshot: Snapshot,
     reads: usize,
     max_reads: usize,
 }
+
 impl StrictDb {
     fn read(&mut self) -> AppResult<()> {
         self.reads += 1;
@@ -167,6 +174,7 @@ impl StrictDb {
         Ok(())
     }
 }
+
 impl Database for StrictDb {
     type Error = Error;
     fn basic(&mut self, address: Address) -> AppResult<Option<AccountInfo>> {
@@ -183,6 +191,7 @@ impl Database for StrictDb {
             code: Some(Bytecode::new_raw(a.code.clone())),
         }))
     }
+
     fn code_by_hash(&mut self, hash: B256) -> AppResult<Bytecode> {
         self.read()?;
         self.snapshot
@@ -193,6 +202,7 @@ impl Database for StrictDb {
             .map(|a| Bytecode::new_raw(a.code.clone()))
             .ok_or_else(|| Error::Dependency(format!("code {hash}")))
     }
+
     fn storage(&mut self, address: Address, index: U256) -> AppResult<U256> {
         self.read()?;
         let a = self
@@ -209,6 +219,7 @@ impl Database for StrictDb {
             },
         }
     }
+
     fn block_hash(&mut self, number: u64) -> AppResult<B256> {
         self.read()?;
         self.snapshot
@@ -218,6 +229,7 @@ impl Database for StrictDb {
             .ok_or_else(|| Error::Dependency(format!("block hash {number}")))
     }
 }
+
 impl DatabaseCommit for StrictDb {
     fn commit(&mut self, changes: revm::primitives::HashMap<Address, Account>) {
         for (address, account) in changes {
@@ -253,6 +265,7 @@ impl DatabaseCommit for StrictDb {
         }
     }
 }
+
 /// Offline, complete snapshots only. Live envelope signature recovery is intentionally not bypassed.
 pub fn execute(job: ReplayJob) -> AppResult<SimulationResult> {
     if !job.synthetic_fixture {
@@ -346,6 +359,7 @@ pub fn execute(job: ReplayJob) -> AppResult<SimulationResult> {
         assumptions:vec!["Synthetic fixture caller is trusted; this is not a signed live transaction.".into(),"Timestamp, ordering, fees, randomness and complete state are explicit fixture assumptions.".into()],
         unresolved,gas_used:Some(gas),elapsed_ms:start.elapsed().as_millis() as u64,evidence,deltas})
 }
+
 pub async fn isolated(job: &ReplayJob, timeout: Duration) -> AppResult<SimulationResult> {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     let bytes = serde_json::to_vec(job)?;

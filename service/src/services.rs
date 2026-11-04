@@ -29,10 +29,12 @@ pub struct Services {
     /// Session lock prevents simultaneous use of the same single-writer journal.
     _journal_lease: Mutex<PgConnection>,
 }
+
 #[derive(Default)]
 pub struct ServiceFactory {
     cell: OnceCell<Arc<Services>>,
 }
+
 impl ServiceFactory {
     pub async fn initialize(&self, cfg: Config) -> AppResult<Arc<Services>> {
         self.cell
@@ -85,6 +87,7 @@ impl ServiceFactory {
             .cloned()
     }
 }
+
 impl Services {
     pub async fn accept(&self, event: Accepted) -> AppResult<Vec<Finding>> {
         let _guard = self.writer.lock().await;
@@ -136,6 +139,7 @@ impl Services {
             }
         }
     }
+
     pub async fn recover(&self) -> AppResult<usize> {
         let _guard = self.writer.lock().await;
         self.healthy.store(false, Ordering::SeqCst);

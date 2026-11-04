@@ -19,6 +19,7 @@ struct Pacing {
     next: Instant,
     blocked_until: Instant,
 }
+
 fn pacing() -> &'static Mutex<Pacing> {
     static SHARED: OnceLock<Mutex<Pacing>> = OnceLock::new();
     SHARED.get_or_init(|| {
@@ -28,6 +29,7 @@ fn pacing() -> &'static Mutex<Pacing> {
         })
     })
 }
+
 pub struct ProviderPool {
     pub chain_id: u64,
     client: reqwest::Client,
@@ -38,6 +40,7 @@ pub struct ProviderPool {
     max_bytes: usize,
     interval: Duration,
 }
+
 impl ProviderPool {
     pub fn new(c: &ChainConfig, cfg: &Config) -> AppResult<Self> {
         let endpoints = c
@@ -63,6 +66,7 @@ impl ProviderPool {
             interval: Duration::from_secs_f64(1.0 / cfg.rpc_requests_per_second as f64),
         })
     }
+
     async fn pace(&self) -> AppResult<()> {
         loop {
             let mut state = pacing().lock().await;
@@ -81,6 +85,7 @@ impl ProviderPool {
             tokio::time::sleep(wait).await;
         }
     }
+
     async fn limited(&self, seconds: u64) -> Error {
         let seconds = seconds.clamp(1, 3600);
         let mut state = pacing().lock().await;
@@ -91,6 +96,7 @@ impl ProviderPool {
             retry_after_secs: seconds,
         }
     }
+
     async fn at(&self, url: &str, method: &str, params: Value) -> AppResult<Value> {
         self.pace().await?;
         let id = self.next.fetch_add(1, Ordering::Relaxed);
@@ -156,6 +162,7 @@ impl ProviderPool {
             .cloned()
             .ok_or_else(|| Error::Provider("missing result".into()))
     }
+
     async fn verify(&self, index: usize) -> AppResult<()> {
         let mut last = self.verified[index].lock().await;
         if last.is_some_and(|when| when.elapsed() < Duration::from_secs(60)) {
@@ -176,6 +183,7 @@ impl ProviderPool {
         *last = Some(Instant::now());
         Ok(())
     }
+
     pub async fn request(&self, method: &str, params: Value) -> AppResult<Value> {
         let _permit = self
             .gate
@@ -201,6 +209,7 @@ impl ProviderPool {
         }
         Err(last)
     }
+
     pub async fn anchored(
         &self,
         method: &str,
@@ -251,6 +260,7 @@ impl ProviderPool {
         Err(last)
     }
 }
+
 pub fn quantity(v: &Value) -> AppResult<u64> {
     let s = v
         .as_str()
@@ -262,6 +272,7 @@ pub fn quantity(v: &Value) -> AppResult<u64> {
     )
     .map_err(|_| Error::Invalid("quantity overflow".into()))
 }
+
 pub fn field<T: serde::de::DeserializeOwned>(v: &Value, name: &str) -> AppResult<T> {
     Ok(serde_json::from_value(v.get(name).cloned().ok_or_else(
         || Error::Invalid(format!("missing {name}")),
@@ -286,6 +297,7 @@ mod tests {
         method_calls: AtomicU64,
         requests: AtomicU64,
     }
+
     async fn rpc(State(state): State<Arc<Mock>>, Json(request): Json<Value>) -> Response {
         state.requests.fetch_add(1, Ordering::SeqCst);
         if state.mode.load(Ordering::SeqCst) == 1 {
@@ -309,6 +321,7 @@ mod tests {
         };
         Json(json!({"jsonrpc":"2.0","id":request["id"],"result":result})).into_response()
     }
+
     #[tokio::test]
     async fn verification_is_cached_and_rate_limits_keep_their_cause() {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();

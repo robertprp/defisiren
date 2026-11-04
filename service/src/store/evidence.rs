@@ -10,6 +10,7 @@ pub struct EvidenceStore {
     pub root: PathBuf,
     pub max_object_bytes: usize,
 }
+
 impl EvidenceStore {
     pub fn new(root: &Path, max_object_bytes: usize) -> AppResult<Self> {
         std::fs::create_dir_all(root)?;
@@ -18,6 +19,7 @@ impl EvidenceStore {
             max_object_bytes,
         })
     }
+
     /// Content addressing makes crash retries idempotent. Checksums cover uncompressed JSON.
     pub fn put(&self, value: &serde_json::Value) -> AppResult<(String, String, usize)> {
         let bytes = serde_json::to_vec(value)?;
@@ -42,6 +44,7 @@ impl EvidenceStore {
         File::open(&self.root)?.sync_all()?;
         Ok((checksum, name, bytes.len()))
     }
+
     pub fn get(&self, checksum: &str) -> AppResult<serde_json::Value> {
         if checksum.len() != 64 || !checksum.bytes().all(|c| c.is_ascii_hexdigit()) {
             return Err(Error::Invalid("evidence checksum".into()));
