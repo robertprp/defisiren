@@ -88,3 +88,25 @@ Journal caps default to 256 MiB live / 16 MiB offline. Committed journal frames 
 
 Resource settings bound RPC concurrency, input sizes, candidate trace count, profile count, hop/fanout and shutdown time. Optional analysis can be skipped at trace-budget saturation, which is counted. The implementation does not yet provide protected-protocol reserved queues or measured sustained-load capacity.
 
+## Ordered feeds and bridges
+
+Set BASE_FLASHBLOCKS_WS_URL to a Base endpoint supporting eth_subscribe with ["newFlashblockTransactions", true]. The adapter persists the raw message before normalization. It retains tentative positions with no canonical block hash. Canonical inclusion or absence at the tentative height emits a separate preconfirmation correction.
+
+Set ARB_SEQUENCER_RELAY_WS_URL to an **uncompressed Nitro feed relay**, not a JSON-RPC WebSocket. The decoder handles version-1 broadcasts and L2 signed messages/batches. It stores unsupported/system messages as raw evidence and hydrates transaction hashes from native RPC. Feed signatures are not independently validated; RPC association is not cryptographic validation of sequencer ordering. Disconnects and hydration failures increment gap counters. These paths have synthetic parsing tests but no live-provider conformance results.
+
+Bridge support is deliberately narrow: direct native Base Portal version-0 deposits and Arbitrum Inbox kind-12 deposits originating on Ethereum. Both canonical halves are required. Matching uses Base sourceHash or the derived Arbitrum typed-deposit transaction hash, then checks recipient/value consistency. Other bridge/token/withdrawal paths remain unsupported. Funding propagation requires existing source funding evidence, dust/hop/time/fanout limits and separate destination-chain identities. A source rollback retracts the bridge incident immediately; destination watch state is reconciled on its next canonical application.
+
+Native safe/finalized tags are checked against ingested canonical hashes before promotion; block depth is not converted into finality. Unavailable tags remain unsupported. Pending observations expire after pending_ttl_seconds (default 900); expiry means watch timeout, not proof that the transaction can never be included.
+
+## RPC limits and console output
+
+Console logs default to compact text on stderr. Set SIREN_LOG_FORMAT=pretty for multiline output or json for log collectors; RUST_LOG controls verbosity. Progress is logged periodically, recovery is explicit, and repeated failures are coalesced. Secrets and raw provider error messages are excluded.
+
+rpc_requests_per_second (default 5) paces HTTP request starts across all chain pools in the process. HTTP 429 and RPC rate-limit responses establish a shared cooldown; numeric Retry-After is honored, otherwise 30 seconds is used. This request budget is not a compute-unit budget and cannot guarantee compatibility with a provider plan. See https://www.alchemy.com/docs/reference/throughput.
+
+Chain-ID probes are single-flight per endpoint and cached for 60 seconds. Native trace requests still validate the specified block hash before and after execution. Blocks prefer eth_getBlockReceipts with position/count/hash checks and use bounded individual receipts when the method is explicitly unsupported. Rate limiting does not trigger an expensive individual-receipt fallback.
+
+The local configuration uses 2 requests/second, 2 concurrent operations per chain, 5-second polls, 1 candidate trace per block, and no pending subscriptions. This reduces coverage and can produce canonical lag; it is a development profile, not a demonstrated real-time four-chain capacity. Existing durable cursors always resume. start_at_head=true selects the current head only when that chain has no cursor; it does not erase historical data or claim historical funding coverage.
+
+Doctor distinguishes reachable RPC endpoints from complete integration verification; successful probes alone no longer set live_integration_verified=true.
+
