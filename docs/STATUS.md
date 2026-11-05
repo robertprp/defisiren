@@ -13,6 +13,22 @@ Status: **incomplete; builds and offline/database tests pass; live integrations 
 
 The initial authoring session did not run commands; the verification above supersedes that earlier execution status.
 
+## Triage and registry update — 2026-11-05
+
+The live database was inspected and 21,675 exact-match erroneous envelope diagnostics
+were archived reversibly. No evidence, revisions or outbox cursors were deleted.
+The UI now separates review candidates, neutral watches, diagnostics and archived
+noise, starts disconnected, and adds chain explorer links. Category filtering is
+server-side and summary counts cover the full database.
+
+The registry now includes twelve native pools (four each on Ethereum, BNB Chain
+and Arbitrum), plus the existing 100 DAI pool, with pinned upstream provenance.
+Base remains unverified; Arbitrum scan starts are distinguished from creation heights.
+See [triage report](INCIDENT_TRIAGE.md) and [pool coverage](POOL_REGISTRY.md).
+Source changes and regression tests have not been compiled or executed in this
+session. Database archive/catalog queries were verified. Operators must rebuild
+and restart their running monitor to activate the detector and API changes.
+
 ## Implemented source paths
 
 | Area | Source implementation | Verification |
@@ -21,7 +37,7 @@ The initial authoring session did not run commands; the verification above super
 | Ingestion | Configured Ethereum/OP/BSC/Nitro RPC families; full blocks/receipts; pending WS for Ethereum/BSC; chain checks; bounded RPC responses; anchored native traces; Base full Flashblocks subscription; bounded Nitro signed-message/batch framing | No live provider tests |
 | Durability | Framed fsync journal; exclusive file writer; streaming startup recovery; applied-journal idempotency; post-commit journal reclamation; atomic canonical cursor/engine/findings/outbox commits | PostgreSQL and crash tests unrun |
 | Reorg | Bounded ancestor search; checkpoint engine rewind; orphaned observations/edges; finding retractions; preconfirmation corrections; hash-checked native safe/finalized promotion; pending TTL | Synthetic DB test unrun |
-| Funding | Three sourced pools; successful Withdrawal recipient/relayer/fee decoding; bounded native transfer propagation; neutral watches | Offline tests written, unrun |
+| Funding | Thirteen source-registered pools; successful Withdrawal recipient/relayer/fee decoding; bounded native transfer propagation; neutral watches | Offline tests written, unrun |
 | Bridges | Base Portal native v0 and Arbitrum Inbox native kind-12 message IDs; independent counterpart arrival; canonical rollback and bounded watch propagation | Synthetic vectors and PostgreSQL tests written, unrun |
 | Rules | Watched activity; funding/deployment/continuation; exact fingerprints; privilege events; native outflow budget; supported governance execution events | Limited synthetic tests |
 | Analysis | PUSH-aware instruction scan; exact and normalized signatures; selector/address candidates; EIP-1167 and EIP-7702 designator recognition; EIP-1967 slot query | Offline tests written, unrun |

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pat
   const { path } = await context.params;
   const route = path.join("/");
   const uuid = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
-  const allowed = /^(v1\/(incidents|chains|findings|reviewed)|health\/ready)$/.test(route)
+  const allowed = route === "v1/incidents/summary" || /^(v1\/(incidents|chains|findings|reviewed)|health\/ready)$/.test(route)
     || new RegExp(`^v1/incidents/${uuid}(/revisions)?$`).test(route)
     || /^v1\/addresses\/[1-9][0-9]{0,17}\/0x[0-9a-fA-F]{40}$/.test(route);
   if (!allowed) return NextResponse.json({ error: "Unknown dashboard endpoint." }, { status: 404, headers: noCache });
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pat
     return NextResponse.json({ error: errors[401] }, { status: 401, headers: noCache });
   }
   for (const key of request.nextUrl.searchParams.keys()) {
-    if (!["after", "limit", "chain_id", "severity"].includes(key)) {
+    if (!["after", "limit", "chain_id", "severity", "category"].includes(key)) {
       return NextResponse.json({ error: errors[400] }, { status: 400, headers: noCache });
     }
   }

@@ -20,7 +20,7 @@ pub fn withdrawals(o: &Observation, pools: &[Pool]) -> AppResult<Vec<FundingEdge
                 && p.address == log.address
                 && o.position
                     .block_number
-                    .is_some_and(|b| b >= p.deployment_block)
+                    .is_some_and(|b| b >= p.deployment_block.or(p.scan_start_block).unwrap_or(0))
         }) else {
             continue;
         };

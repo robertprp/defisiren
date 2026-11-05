@@ -14,7 +14,8 @@ pnpm dev
 ```
 
 Open **http://127.0.0.1:3000**. Both dev and production commands bind to loopback.
-The dashboard opens in a clearly labeled synthetic demo environment. Demo fixtures
+The dashboard opens disconnected with no alerts. Choose Connect live, or explicitly
+choose Explore synthetic demo instead. Demo fixtures
 stay in the browser and never enter the Rust database.
 
 ## Connect live data
@@ -39,7 +40,7 @@ cargo run --release -- --config config/local.toml api-key --name dashboard
 Choose **Connect live** in the UI and enter the generated key. The key stays in tab
 memory, is sent only as an Authorization header, and is not persisted in cookies,
 localStorage, or sessionStorage. Disconnecting or reloading clears the session and
-returns to the labeled demo. Live errors never silently substitute demo data.
+returns to the connection screen. Live errors never silently substitute demo data.
 
 The dashboard's read-only Next.js proxy defaults to `http://127.0.0.1:8080`.
 For another Rust API origin, create `web/.env.local`:
@@ -56,8 +57,8 @@ time. It does not expose mutation or response-execution endpoints.
 ## Views and data scope
 
 - **Overview:** recent incident counts, an hourly Highcharts activity chart, and
-  network capability probe status. Counts describe the latest **256 updated
-  incidents**, not all-time activity or total chain activity. The chart buckets
+  network capability probe status. Summary counts cover the full incident catalog. Charts describe only the latest
+  **256 updated incidents in the selected category**, not total chain activity. The chart buckets
   those incidents by their observation timestamps, including retracted records in
   the overall series; the priority series excludes retractions.
 - **Findings:** search by type, address, incident ID, or network; filter by chain,
@@ -101,3 +102,17 @@ only rejected requests. Provider-backed integration remains a separate check.
 Highcharts is included at the user's request and retains its own license terms;
 review its licensing for your intended deployment. The repository's MIT license
 does not relicense third-party dependencies.
+
+## Triage, explorers, and pool identities
+
+Live mode starts on **Needs review**. Separate tabs show Watch activity, Diagnostics,
+Retracted, Archived noise, and Synthetic / replay. The backend filters categories
+before limiting results, so a diagnostic flood cannot hide review candidates.
+Rebuild/restart the Rust service to apply migration 0005 and expose the category
+and summary endpoints before using this updated frontend.
+
+Address, transaction, and block links use Etherscan, Basescan, BscScan, or Arbiscan
+according to chain ID. Synthetic findings do not link fabricated transactions to
+explorers. The Networks page shows the source-pinned Tornado Cash registry.
+Direct withdrawals and downstream intermediary transfers have different labels.
+See [pool coverage](../docs/POOL_REGISTRY.md) and [database triage](../docs/INCIDENT_TRIAGE.md).

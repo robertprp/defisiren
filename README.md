@@ -25,6 +25,6 @@ See [setup and commands](docs/OPERATIONS.md), [fidelity and detector coverage](d
 
 The Next.js dashboard lives in [`web/`](web/README.md). From that directory, run
 `pnpm install --frozen-lockfile` and `pnpm dev`, then open
-**http://127.0.0.1:3000**. Explore the labeled demo or choose **Connect live** and
+**http://127.0.0.1:3000**. Choose **Connect live** (or explicitly explore the labeled demo) and
 enter an API key from the running Rust monitor. It includes findings, evidence and
 revision history, network coverage, address lookup, and Highcharts activity charts.

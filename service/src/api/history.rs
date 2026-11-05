@@ -129,7 +129,7 @@ mod tests {
             .await
             .unwrap();
         let id = Uuid::new_v4();
-        sqlx::query("INSERT INTO incidents(id,chain_id,revision,data) VALUES($1,1,3,'{}')")
+        sqlx::query("INSERT INTO incidents(id,chain_id,revision,data) VALUES($1,1,3,'{\"severity\":\"high\",\"finding_type\":\"unusual_outflow\"}')")
             .bind(id)
             .execute(&services.store.pool)
             .await
@@ -162,6 +162,14 @@ mod tests {
                 .status(),
             401
         );
+        let catalog: Value = get("/v1/incidents?category=review".into())
+            .send().await.unwrap().json().await.unwrap();
+        assert_eq!(catalog["incidents"].as_array().unwrap().len(), 1);
+        assert_eq!(catalog["incidents"][0]["category"], "review");
+        let watches: Value = get("/v1/incidents?category=watch".into())
+            .send().await.unwrap().json().await.unwrap();
+        assert_eq!(watches["incidents"], json!([]));
+        assert_eq!(get("/v1/incidents?category=invalid".into()).send().await.unwrap().status(), 400);
         let page: Value = get("/v1/findings?limit=2".into())
             .send()
             .await

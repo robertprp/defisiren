@@ -389,3 +389,19 @@ fn chain_native_envelopes_are_recognized_without_enabling_execution() {
     assert!(!known_envelope(56,127));
     assert!(!known_envelope(999,4));
 }
+
+#[test]
+fn native_pool_registry_covers_verified_chains_without_inventing_base() {
+    let pools = contracts::pools().unwrap();
+    for chain in [1, 56, 42161] {
+        let native = pools.iter().filter(|p| p.chain_id == chain && p.asset.is_none()).collect::<Vec<_>>();
+        assert_eq!(native.len(), 4);
+        for amount in [100_000_000_000_000_000u128, 1_000_000_000_000_000_000,
+            10_000_000_000_000_000_000, 100_000_000_000_000_000_000] {
+            assert!(native.iter().any(|p| p.denomination == U256::from(amount)));
+        }
+    }
+    assert!(!pools.iter().any(|p| p.chain_id == 8453));
+    assert!(pools.iter().filter(|p| p.chain_id == 42161)
+        .all(|p| p.deployment_block.is_none() && p.scan_start_block == Some(3_300_000)));
+}

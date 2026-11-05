@@ -74,7 +74,6 @@ struct Filter {
     after: i64,
     chain_id: Option<u64>,
     severity: Option<String>,
-    limit: Option<i64>,
 }
 
 async fn incident(

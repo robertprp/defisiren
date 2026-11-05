@@ -7,6 +7,8 @@ export interface Evidence {
 }
 
 export interface Finding {
+  category?: "review" | "watch" | "diagnostics" | "retracted" | "archived" | "demo";
+  triage?: { archived: boolean; reason: string | null };
   incident_id: string;
   event_id: string;
   revision: number;
@@ -77,5 +79,5 @@ export const CHAINS: Record<number, { name: string; short: string; color: string
 export const chainName = (id: number) => CHAINS[id]?.name ?? `Chain ${id}`;
 export const humanize = (text: string) => text.replaceAll("_", " ");
 export const shorten = (text: string) => text.length > 17 ? `${text.slice(0, 8)}…${text.slice(-6)}` : text;
-export const isAlert = (f: Finding) => !f.retracted && ["high", "critical"].includes(f.severity);
+export const isAlert = (f: Finding) => !f.retracted && !f.triage?.archived && !["synthetic_demo", "offline_replay"].includes(f.source) && ["high", "critical"].includes(f.severity);
 export const dateTime = (text: string) => new Date(text).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });

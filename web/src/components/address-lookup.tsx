@@ -7,6 +7,8 @@ import { monitor, ApiError } from "@/lib/api";
 import { CHAINS, dateTime, type Profile } from "@/lib/types";
 import { DEMO_ADDRESS, demoProfile } from "@/lib/demo";
 import { ChainLabel, Empty, ErrorBox, Loading } from "./ui";
+import { ExplorerLink } from "./explorer-link";
+import { poolFor } from "@/lib/pools";
 import { CopyValue } from "./incident-detail";
 
 export default function AddressLookup({ token, demo, now }: { token: string; demo: boolean; now: number }) {
@@ -36,14 +38,14 @@ export default function AddressLookup({ token, demo, now }: { token: string; dem
     {!search && <Empty title="Every address has a trail" detail="Search for a watched address to explore the evidence behind its profile." />}
     {search && query.isPending && <Loading label="Looking up watch profile…" />}
     {query.error && <ErrorBox error={query.error} retry={() => void query.refetch()} />}
-    {query.data && <section className="panel profile-panel"><div className="section-heading"><h2>Watch profile</h2><ChainLabel id={query.data.chain_id} /></div><CopyValue value={query.data.address} />
+    {query.data && <section className="panel profile-panel"><div className="section-heading"><h2>Watch profile</h2><ChainLabel id={query.data.chain_id} /></div><ExplorerLink chain={query.data.chain_id} kind="address" value={query.data.address} demo={demo} /><CopyValue value={query.data.address} />
       <div className="detail-facts"><div><span>First observed</span><strong>{dateTime(query.data.first_observed)}</strong></div><div><span>Last activity</span><strong>{dateTime(query.data.last_activity)}</strong></div><div><span>Watch expires</span><strong>{dateTime(query.data.watch_until)}</strong></div><div><span>Historical coverage</span><strong>{query.data.history_complete ? "Complete" : "Partial / unknown"}</strong></div></div>
       <div className="notice">A watch indicates observed funding or operator enrollment. It does not establish malicious activity.</div>
       <h3>Funding evidence <span className="count">{query.data.funding.length}</span></h3>
       {query.data.funding.length === 0 && <p className="muted">No funding edges recorded.</p>}
-      {query.data.funding.map((edge) => <div className="funding-row" key={edge.id}><span className="eyebrow">HOP {edge.hop}</span><CopyValue value={edge.from} /><span><strong>{edge.amount}</strong> base units · {edge.asset ?? "native asset"}</span></div>)}
+      {query.data.funding.map((edge) => <div className="funding-row" key={edge.id}><span className="eyebrow">HOP {edge.hop}</span><span className="funding-identity">{poolFor(query.data!.chain_id, edge.from)?.label ?? "Watched intermediary · not a registered pool"}</span><ExplorerLink chain={query.data!.chain_id} kind="address" value={edge.from} demo={demo} /><CopyValue value={edge.from} /><ExplorerLink chain={query.data!.chain_id} kind="tx" value={edge.transaction} demo={demo}>View funding transaction</ExplorerLink><span><strong>{edge.amount}</strong> base units · {edge.asset ?? "native asset"}</span></div>)}
       <h3>Deployments <span className="count">{query.data.deployments.length}</span></h3>
-      {query.data.deployments.length ? query.data.deployments.map((item) => <CopyValue key={item} value={item} />) : <p className="muted">No deployments recorded.</p>}
+      {query.data.deployments.length ? query.data.deployments.map((item) => <div key={item}><ExplorerLink chain={query.data.chain_id} kind="address" value={item} demo={demo} /><CopyValue value={item} /></div>) : <p className="muted">No deployments recorded.</p>}
     </section>}
   </>;
 }

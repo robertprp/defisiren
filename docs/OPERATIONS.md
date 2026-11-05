@@ -123,3 +123,19 @@ Run the HTTP integration test against a fresh disposable database (it inserts fi
 ```sh
 cargo test -p siren-service rest_replay_and_revision_history -- --ignored
 ```
+
+## Triage dashboard and registry update
+
+Rebuild and restart the monitor to activate chain-aware envelope recognition and
+the triaged incident API. Migration 0005 preserves the original records while
+archiving exact-match legacy envelope noise; it is safe to apply on normal startup
+after the manual November 5 cleanup. See [the triage report](INCIDENT_TRIAGE.md).
+
+The new dashboard starts disconnected. Connect an API key to see live data, or
+explicitly select the synthetic demo. Needs review and Watch activity are separate
+views; unsupported formats belong to Diagnostics. The summary counters cover all
+stored records; charts cover only the selected category's loaded window.
+
+The expanded [pool registry](POOL_REGISTRY.md) takes effect for subsequent ingestion.
+Historical watches are not automatically backfilled. Source-linked identities do
+not turn downstream funding intermediaries into registered pool addresses.

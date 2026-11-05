@@ -8,7 +8,7 @@
   "paths": {
     "/v1/incidents": {
       "get": {
-        "summary": "/v1/incidents",
+        "summary": "List triaged incidents; filters apply before limit",
         "security": [
           {
             "bearerAuth": []
@@ -16,7 +16,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Response; see operator documentation"
+            "description": "Object with incidents, category, limit. Each incident includes category and triage metadata."
           },
           "401": {
             "description": "Invalid bearer key"
@@ -26,8 +26,56 @@
           },
           "503": {
             "description": "Dependency unavailable"
+          },
+          "400": {
+            "description": "Invalid category, limit or chain"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "active",
+              "enum": [
+                "active",
+                "review",
+                "watch",
+                "diagnostics",
+                "retracted",
+                "archived",
+                "demo",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 256
+            }
+          }
+        ]
       }
     },
     "/v1/incidents/{id}": {
@@ -489,6 +537,30 @@
           },
           "503": {
             "description": "Dependency unavailable"
+          }
+        }
+      }
+    },
+    "/v1/incidents/summary": {
+      "get": {
+        "summary": "Full-database incident category counts",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "counts by review, watch, diagnostics, retracted, archived, demo; scope=all_stored_incidents"
+          },
+          "401": {
+            "description": "Invalid bearer key"
+          },
+          "429": {
+            "description": "Rate limit"
+          },
+          "503": {
+            "description": "Database unavailable"
           }
         }
       }

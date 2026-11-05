@@ -6,6 +6,7 @@ test("demo filtering, pagination, investigation and export", async ({ page }) =>
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
+  await page.getByRole("button", { name: "Explore synthetic demo instead" }).click();
   await expect(page.getByText("You’re exploring a demo.")).toBeVisible();
   await expect(page.locator("tbody tr")).toHaveCount(6);
   await expect(page.locator(".highcharts-root")).toBeVisible();
@@ -30,6 +31,7 @@ test("demo filtering, pagination, investigation and export", async ({ page }) =>
 test("mobile navigation and address lookup remain usable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  await page.getByRole("button", { name: "Explore synthetic demo instead" }).click();
   await page.getByRole("button", { name: "Address explorer", exact: true }).click();
   await page.getByRole("button", { name: "Try the sample address" }).click();
   await expect(page.getByRole("heading", { name: "Watch profile" })).toBeVisible();
@@ -41,30 +43,30 @@ test("mobile navigation and address lookup remain usable", async ({ page }) => {
 });
 
 test("connects with an in-memory key and clears live data on disconnect", async ({ page }) => {
-  const findings = demoFindings(Date.now()).slice(0, 1).map((finding) => ({ ...finding, finding_type: "live_test_signal" }));
+  const findings = demoFindings(Date.now()).slice(0, 1).map((finding) => ({ ...finding, finding_type: "live_test_signal", source: "canonical_rpc", category: "review" as const }));
   await page.route("**/api/monitor/**", async (route) => {
     expect(route.request().headers().authorization).toBe("Bearer cs_test_only");
     const path = new URL(route.request().url()).pathname;
     const body = path.endsWith("/chains") ? { chains: demoChains(Date.now()) }
-      : path.endsWith("/ready") ? demoHealth : { incidents: findings };
+      : path.endsWith("/ready") ? demoHealth : path.endsWith("/summary") ? { counts: { review: 1, watch: 0, diagnostics: 0, retracted: 0, archived: 0, demo: 0 }, scope: "all_stored_incidents" } : { incidents: findings };
     await route.fulfill({ json: body });
   });
   await page.goto("/");
-  await page.getByRole("button", { name: "Connect live", exact: true }).click();
+  await page.getByRole("button", { name: "Connect live monitor", exact: true }).click();
   await page.getByLabel("API key", { exact: true }).fill("cs_test_only");
   await page.getByRole("button", { name: "Connect to live data" }).click();
   await expect(page.getByText("Live monitor", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "live test signal", exact: true })).toBeVisible();
   expect(await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }))).not.toContain("cs_test_only");
   await page.getByRole("button", { name: "Disconnect", exact: true }).click();
-  await expect(page.getByText("You’re exploring a demo.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Connect to your monitor." })).toBeVisible();
   await expect(page.getByRole("button", { name: "live test signal", exact: true })).toHaveCount(0);
 });
 
 test("invalid credentials show an error and never enter live mode", async ({ page }) => {
   await page.route("**/api/monitor/**", (route) => route.fulfill({ status: 401, json: { error: "API key rejected or expired." } }));
   await page.goto("/");
-  await page.getByRole("button", { name: "Connect live", exact: true }).click();
+  await page.getByRole("button", { name: "Connect live monitor", exact: true }).click();
   await page.getByLabel("API key", { exact: true }).fill("invalid");
   await page.getByRole("button", { name: "Connect to live data" }).click();
   await expect(page.getByRole("alert")).toContainText("API key rejected or expired.");

@@ -5,7 +5,10 @@ use siren_lib::{AppResult, Error};
 pub struct Pool {
     pub chain_id: u64,
     pub address: Address,
-    pub deployment_block: u64,
+    /// Upstream creation metadata when available; never substitute a scan boundary.
+    pub deployment_block: Option<u64>,
+    #[serde(default)]
+    pub scan_start_block: Option<u64>,
     pub abi_version: String,
     pub asset: Option<Address>,
     pub denomination: U256,
