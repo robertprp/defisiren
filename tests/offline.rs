@@ -375,3 +375,17 @@ fn protection_replay_rejects_modified_attack_or_substituted_state() {
     changed.transactions.remove(1);
     assert!(response::validate_replay_pair(&action, &attack, &changed).is_err());
 }
+
+#[test]
+fn chain_native_envelopes_are_recognized_without_enabling_execution() {
+    use siren_service::detection::known_envelope;
+    for (chain, kinds) in [(1, vec![0,1,2,3,4]), (56, vec![3,4]), (8453, vec![4,126]),
+        (42161, vec![4,100,101,102,104,105,106])] {
+        for kind in kinds { assert!(known_envelope(chain,kind), "chain {chain} type {kind}"); }
+    }
+    assert!(!known_envelope(1,126));
+    assert!(!known_envelope(8453,106));
+    assert!(!known_envelope(42161,126));
+    assert!(!known_envelope(56,127));
+    assert!(!known_envelope(999,4));
+}

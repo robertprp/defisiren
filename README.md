@@ -20,3 +20,11 @@ Production response execution is disabled. The local demonstration never submits
 - `docker/`, `docs/`: deployment configuration, API schema, operation and coverage.
 
 See [setup and commands](docs/OPERATIONS.md), [fidelity and detector coverage](docs/COVERAGE.md), [durability](docs/DURABILITY.md), [benchmark status](docs/BENCHMARKS.md), and [reference inspection](docs/REFERENCE.md).
+
+## Web dashboard
+
+The Next.js dashboard lives in [`web/`](web/README.md). From that directory, run
+`pnpm install --frozen-lockfile` and `pnpm dev`, then open
+**http://127.0.0.1:3000**. Explore the labeled demo or choose **Connect live** and
+enter an API key from the running Rust monitor. It includes findings, evidence and
+revision history, network coverage, address lookup, and Highcharts activity charts.

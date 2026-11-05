@@ -39,6 +39,17 @@ pub fn candidate(o: &Observation, cfg: &Config) -> bool {
         })
 }
 
+/// Recognized wire formats, not a claim of local EVM execution support.
+/// Sources: OP deposit spec, Arbitrum RPC types, and bnb-chain/bsc core/types.
+pub fn known_envelope(chain_id: u64, tx_type: u8) -> bool {
+    match chain_id {
+        1 | 56 => tx_type <= 4,
+        8453 => matches!(tx_type, 0 | 1 | 2 | 4 | 126),
+        42161 => matches!(tx_type, 0 | 1 | 2 | 4 | 100 | 101 | 102 | 104 | 105 | 106),
+        _ => tx_type <= 2,
+    }
+}
+
 fn privilege_topics() -> &'static [B256] {
     static TOPICS: std::sync::OnceLock<Vec<B256>> = std::sync::OnceLock::new();
     TOPICS.get_or_init(|| {
@@ -312,10 +323,7 @@ impl Engine {
                 }
             }
         }
-        let known = match o.chain_id {
-            1 => o.tx_type <= 4,
-            _ => o.tx_type <= 2,
-        };
+        let known = known_envelope(o.chain_id, o.tx_type);
         if !known {
             findings.push(finding(
                 o,

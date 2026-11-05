@@ -3,3 +3,12 @@
 /data
 /config/local.toml
 *.profraw
+
+# Web dashboard
+/web/node_modules/
+/web/.next/
+/web/.env*
+!/web/.env.example
+/web/*.tsbuildinfo
+/web/playwright-report/
+/web/test-results/

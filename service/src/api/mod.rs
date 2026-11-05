@@ -1,4 +1,5 @@
 mod history;
+mod catalog;
 use crate::services::Services;
 use alloy_primitives::Address;
 use axum::{
@@ -25,7 +26,8 @@ use uuid::Uuid;
 
 pub fn router(s: Arc<Services>) -> Router {
     let protected = Router::new()
-        .route("/v1/incidents", get(incidents))
+        .route("/v1/incidents", get(catalog::incidents))
+        .route("/v1/incidents/summary", get(catalog::summary))
         .route("/v1/incidents/{id}", get(incident))
         .route("/v1/incidents/{id}/revisions", get(history::revisions))
         .route("/v1/findings", get(history::findings))
@@ -75,20 +77,11 @@ struct Filter {
     limit: Option<i64>,
 }
 
-async fn incidents(
-    State(s): State<Arc<Services>>,
-    Query(f): Query<Filter>,
-) -> Result<Json<Value>, StatusCode> {
-    let rows:Vec<Value>=sqlx::query_scalar("SELECT data FROM incidents WHERE ($1::bigint IS NULL OR chain_id=$1) ORDER BY updated_at DESC,id LIMIT $2")
-        .bind(f.chain_id.map(|x|x as i64)).bind(f.limit.unwrap_or(100).clamp(1,256)).fetch_all(&s.store.pool).await.map_err(|_|StatusCode::SERVICE_UNAVAILABLE)?;
-    Ok(Json(json!({"incidents":rows})))
-}
-
 async fn incident(
     State(s): State<Arc<Services>>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Value>, StatusCode> {
-    let value: Option<Value> = sqlx::query_scalar("SELECT data FROM incidents WHERE id=$1")
+    let value: Option<Value> = sqlx::query_scalar("SELECT data || jsonb_build_object('category',category) FROM incident_catalog WHERE id=$1")
         .bind(id)
         .fetch_optional(&s.store.pool)
         .await

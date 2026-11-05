@@ -3,3 +3,8 @@ target
 data
 .env
 config/local.toml
+web/node_modules
+web/.next
+web/.env*
+web/test-results
+web/playwright-report
