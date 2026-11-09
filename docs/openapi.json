@@ -16,7 +16,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Object with incidents, category, limit. Each incident includes category and triage metadata."
+            "description": "Object with incidents, category, limit, scanned, page_full and next. next is null after the last page, otherwise contains before and id for the next older page."
           },
           "401": {
             "description": "Invalid bearer key"
@@ -28,7 +28,7 @@
             "description": "Dependency unavailable"
           },
           "400": {
-            "description": "Invalid category, limit or chain"
+            "description": "Invalid cursor or incomplete before/id pair"
           }
         },
         "parameters": [
@@ -73,6 +73,24 @@
               "default": 100,
               "minimum": 1,
               "maximum": 256
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "UTC RFC3339 updated_at from the previous response next.before; required together with id.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Incident UUID from the previous response next.id; required together with before.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
         ]

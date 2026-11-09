@@ -44,7 +44,7 @@ ones. No process was started or restarted during this change.
 `GET /v1/incidents?category=review&limit=256` filters **before** applying the limit.
 Categories: `review`, `watch`, `diagnostics`, `retracted`, `archived`, `demo`.
 `active` (the default) includes review and watch; `all` preserves access to every
-category. Optional `chain_id` and `severity` filters are applied in SQL. Responses
+category. Optional `chain_id` and `severity` filters are applied in SQL. Results are ordered by `(updated_at DESC, id DESC)`; pass both `before` (the prior page’s `next.before`) and `id` (the prior page’s `next.id`) to traverse older pages without offsets. Responses include `scanned`, `page_full` and `next`; when fewer records than the limit are returned, `next` is null. Responses
 include per-record `category` and `triage` metadata. Incident detail also includes
 these fields, while immutable revision payloads remain unchanged.
 

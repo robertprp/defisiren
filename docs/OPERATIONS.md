@@ -139,3 +139,8 @@ stored records; charts cover only the selected category's loaded window.
 The expanded [pool registry](POOL_REGISTRY.md) takes effect for subsequent ingestion.
 Historical watches are not automatically backfilled. Source-linked identities do
 not turn downstream funding intermediaries into registered pool addresses.
+Incident catalog pages use a stable `(updated_at DESC, id DESC)` cursor rather than
+offsets. Request `limit` up to 256. Continue with both `before` and `id` from the
+previous response's `next` object. A partial page returns `next: null`. Filtering
+applies before the cursor and page limit. The dashboard fetches older history on
+demand; automatic incident polling pauses once more than one page is loaded.
