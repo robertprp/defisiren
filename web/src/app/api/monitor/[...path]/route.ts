@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pat
     return NextResponse.json({ error: errors[401] }, { status: 401, headers: noCache });
   }
   for (const key of request.nextUrl.searchParams.keys()) {
-    if (!["after", "limit", "chain_id", "severity", "category"].includes(key)) {
+    if (!["after", "limit", "chain_id", "severity", "category", "before", "id"].includes(key)) {
       return NextResponse.json({ error: errors[400] }, { status: 400, headers: noCache });
     }
   }

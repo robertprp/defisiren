@@ -57,8 +57,10 @@ time. It does not expose mutation or response-execution endpoints.
 ## Views and data scope
 
 - **Overview:** recent incident counts, an hourly Highcharts activity chart, and
-  network capability probe status. Summary counts cover the full incident catalog. Charts describe only the latest
-  **256 updated incidents in the selected category**, not total chain activity. The chart buckets
+  network capability probe status. Summary counts cover the full incident catalog. The incident feed uses stable
+  cursor pages of 256 and can traverse older records. Charts show loaded records in
+  the selected category, not total chain activity. Automatic list refresh pauses
+  while multiple history pages are open; use Refresh dashboard for a current snapshot. The chart buckets
   those incidents by their observation timestamps, including retracted records in
   the overall series; the priority series excludes retractions.
 - **Findings:** search by type, address, incident ID, or network; filter by chain,
@@ -72,8 +74,10 @@ time. It does not expose mutation or response-execution endpoints.
 - **Address explorer:** per-chain watch profiles, raw funding amounts in base
   units, history completeness, and deployments.
 
-Live incidents refresh every 15 seconds; capabilities and readiness every 30
-seconds while the tab is active. Use Pause updates to pause these dashboard polls.
+The incident feed refreshes every 15 seconds until older pages are loaded; with
+multiple pages open, use Refresh dashboard to reload the snapshot. Capabilities
+and readiness refresh every 30 seconds while the tab is active. Use Pause updates
+to pause these dashboard polls.
 An open incident drawer independently polls its current revision every 15 seconds.
 API rate-limit and authentication errors are surfaced. Multiple open dashboards
 share the Rust key's rate limit. No account management or write actions are added.
